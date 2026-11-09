@@ -726,15 +726,15 @@ bool TSecureShell::StartOpenSshAskpass()
   const DWORD PipeMode = PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_NOWAIT;
   FAskpassPipe = ::CreateNamedPipeW(PipeName.c_str(), PIPE_ACCESS_DUPLEX,
     PipeMode | PIPE_REJECT_REMOTE_CLIENTS, 1,
-    static_cast<DWORD>(sizeof(OpenSshAskpass::Response)),
-    static_cast<DWORD>(sizeof(OpenSshAskpass::Request)), 0, nullptr);
+    static_cast<DWORD>(sizeof(OpenSshAskpass::Request)),
+    static_cast<DWORD>(sizeof(OpenSshAskpass::Response)), 0, nullptr);
   if (FAskpassPipe == INVALID_HANDLE_VALUE)
   {
     // PIPE_REJECT_REMOTE_CLIENTS is not available on very old systems.
     FAskpassPipe = ::CreateNamedPipeW(PipeName.c_str(), PIPE_ACCESS_DUPLEX,
       PipeMode, 1,
-      static_cast<DWORD>(sizeof(OpenSshAskpass::Response)),
-      static_cast<DWORD>(sizeof(OpenSshAskpass::Request)), 0, nullptr);
+      static_cast<DWORD>(sizeof(OpenSshAskpass::Request)),
+      static_cast<DWORD>(sizeof(OpenSshAskpass::Response)), 0, nullptr);
   }
   if (FAskpassPipe == INVALID_HANDLE_VALUE)
   {
