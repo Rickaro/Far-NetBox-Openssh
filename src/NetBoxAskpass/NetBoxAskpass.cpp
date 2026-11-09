@@ -235,8 +235,15 @@ int wmain(int argc, wchar_t ** argv)
   }
 
   wchar_t Buffer[4096]{};
-  const DWORD Length = ::GetEnvironmentVariableW(L"NETBOX_ASKPASS_PASSWORD",
-    Buffer, static_cast<DWORD>(_countof(Buffer)));
+  const wchar_t * Variable = ContainsNoCase(Prompt, L"passphrase") ?
+    L"NETBOX_ASKPASS_PASSPHRASE" : L"NETBOX_ASKPASS_PASSWORD";
+  DWORD Length = ::GetEnvironmentVariableW(Variable, Buffer, static_cast<DWORD>(_countof(Buffer)));
+  if ((Length == 0) && (Variable != L"NETBOX_ASKPASS_PASSWORD"))
+  {
+    // Fall back to the session password when no separate passphrase is stored.
+    Variable = L"NETBOX_ASKPASS_PASSWORD";
+    Length = ::GetEnvironmentVariableW(Variable, Buffer, static_cast<DWORD>(_countof(Buffer)));
+  }
   if (Length > 0)
   {
     WriteAnswer(std::wstring(Buffer, Length));

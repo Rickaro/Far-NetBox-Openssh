@@ -23,7 +23,7 @@ public:
   ~TProcess() noexcept;
 
   bool Start(const std::vector<UnicodeString> & Arguments,
-    const UnicodeString & Password, UnicodeString & Error);
+    const UnicodeString & Password, const UnicodeString & Passphrase, UnicodeString & Error);
   void Close();
 
   bool Write(const uint8_t * Data, size_t Length, UnicodeString & Error);

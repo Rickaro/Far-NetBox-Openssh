@@ -657,7 +657,8 @@ void TSecureShell::OpenOpenSsh()
   FUI->Information(LoadStr(STATUS_AUTHENTICATE));
 
   UnicodeString Error;
-  if (!FOpenSshProcess->Start(Arguments, FSessionData->GetPassword(), Error))
+  if (!FOpenSshProcess->Start(Arguments, FSessionData->GetPassword(),
+    FSessionData->GetPassphrase(), Error))
   {
     FOpenSshProcess.reset();
     FOpenSshMode = false;

@@ -236,7 +236,7 @@ int main()
       UnicodeString Error;
       std::vector<UnicodeString> Arguments;
       Arguments.push_back(L"-V");
-      CHECK(Process.Start(Arguments, UnicodeString(), Error));
+      CHECK(Process.Start(Arguments, UnicodeString(), UnicodeString(), Error));
 
       std::vector<uint8_t> Stdout;
       std::string Stderr;

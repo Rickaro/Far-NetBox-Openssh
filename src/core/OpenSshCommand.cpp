@@ -13,6 +13,7 @@
 #include "SessionData.h"
 
 #include <string>
+#include <cstring>
 #include <vector>
 
 namespace OpenSsh
@@ -53,6 +54,32 @@ void AddOption(std::vector<UnicodeString> & Arguments, const wchar_t * Name, int
   }
   Arguments.push_back(L"-o");
   Arguments.push_back(UnicodeString(Name) + L"=" + UnicodeString(std::to_wstring(Value).c_str()));
+}
+
+bool IsPuTTYKeyFile(const UnicodeString & Path)
+{
+  const int32_t Dot = Path.RPos(L'.');
+  if (Dot > 0)
+  {
+    const UnicodeString Extension = Path.SubString(Dot + 1, Path.Length() - Dot);
+    if (Sysutils::LowerCase(Extension) == L"ppk")
+    {
+      return true;
+    }
+  }
+
+  const HANDLE Handle = ::CreateFileW(Path.c_str(), GENERIC_READ,
+    FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+  if (Handle == INVALID_HANDLE_VALUE)
+  {
+    return false;
+  }
+  char Header[32]{};
+  DWORD Read = 0;
+  const bool Result = (::ReadFile(Handle, Header, sizeof(Header), &Read, nullptr) != FALSE) &&
+    (Read >= 20) && (memcmp(Header, "PuTTY-User-Key-File-", 20) == 0);
+  ::CloseHandle(Handle);
+  return Result;
 }
 
 UnicodeString JumpHost(const TSessionData * Data)
@@ -120,6 +147,13 @@ bool CanUseOpenSsh(const TSessionData * Data)
   }
 
   if (Data->GetTunnel() && Data->GetTunnelHostName().IsEmpty())
+  {
+    return false;
+  }
+
+  // OpenSSH cannot read PuTTY .ppk keys. Keep the PuTTY backend for them.
+  if (!Data->GetPublicKeyFile().IsEmpty() &&
+    IsPuTTYKeyFile(ExpandKeyPath(Data->GetPublicKeyFile())))
   {
     return false;
   }
@@ -193,6 +227,12 @@ std::vector<UnicodeString> BuildSshArguments(const TSessionData * Data, bool Scp
     Arguments.push_back(ExpandKeyPath(Data->GetPublicKeyFile()));
     // Respect exactly the key selected by the user.
     AddOption(Arguments, L"IdentitiesOnly", L"yes");
+  }
+
+  const UnicodeString CertificateFile = Data->DetachedCertificate;
+  if (!CertificateFile.IsEmpty())
+  {
+    AddOption(Arguments, L"CertificateFile", ExpandKeyPath(CertificateFile));
   }
 
   if (Data->GetProxyMethod() == pmCmd && !Data->GetProxyLocalCommand().IsEmpty())
