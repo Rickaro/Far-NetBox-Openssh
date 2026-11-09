@@ -578,12 +578,12 @@ void TWinSCPFileSystem::LoadOpenSshSessions()
 
     for (const UnicodeString & Warning : Reader.GetWarnings())
     {
-      LogEvent(FORMAT("OpenSSH config: %s", Warning));
+      AppLogFmt(L"OpenSSH config: %s", Warning);
     }
   }
   catch (Exception & E)
   {
-    LogEvent(FORMAT("OpenSSH config: %s", E.Message));
+    AppLogFmt(L"OpenSSH config: %s", E.Message);
   }
 }
 
