@@ -142,13 +142,19 @@ int main()
       "Include config.d/work\n");
     WriteFile(Ssh + L"\\config.d\\work",
       "Host work-host\n"
-      "Include nested/db\n");
+      "Include config.d/nested/db\n");
     WriteFile(Ssh + L"\\config.d\\nested\\db",
       "Host db-host\n");
 
     OpenSsh::TConfigReader Reader(US(Ssh + L"\\config"), US(Ssh));
     Reader.Read();
     const std::vector<OpenSsh::THostEntry> & Hosts = Reader.GetHosts();
+    std::cout << "include test: hosts=" << Hosts.size()
+      << " warnings=" << Reader.GetWarnings().size() << std::endl;
+    for (const OpenSsh::THostEntry & Entry : Hosts)
+    {
+      std::wcout << L"  host=" << NameOf(Entry) << L" folder=" << FolderOf(Entry) << std::endl;
+    }
     CHECK(Hosts.size() == 3u);
     CHECK(FolderOf(*Find(Hosts, L"root-host")).empty());
     CHECK(FolderOf(*Find(Hosts, L"work-host")) == L"work");
