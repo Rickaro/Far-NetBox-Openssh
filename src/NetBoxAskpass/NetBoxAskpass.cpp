@@ -142,7 +142,7 @@ bool RunDialog(const std::wstring & Prompt)
   WindowClass.lpfnWndProc = DialogProc;
   WindowClass.hInstance = Instance;
   WindowClass.hCursor = ::LoadCursorW(nullptr, IDC_ARROW);
-  WindowClass.hbrBackground = reinterpret_cast<HBRUSH>(COLOR_WINDOW + 1);
+  WindowClass.hbrBackground = reinterpret_cast<HBRUSH>(static_cast<INT_PTR>(COLOR_WINDOW + 1));
   WindowClass.lpszClassName = ClassName;
   if (::RegisterClassExW(&WindowClass) == 0)
   {
@@ -209,7 +209,7 @@ bool RunDialog(const std::wstring & Prompt)
       }
       if (Message.wParam == VK_RETURN)
       {
-        ::PostMessageW(Window, WM_COMMAND, OkId, 0);
+        ::PostMessageW(Window, WM_COMMAND, static_cast<WPARAM>(OkId), 0);
       }
     }
     ::TranslateMessage(&Message);

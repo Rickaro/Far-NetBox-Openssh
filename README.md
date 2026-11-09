@@ -22,7 +22,9 @@ Far3_x64\Far.exe
 
 ## Key Features
 
-- **SFTP/SCP** — SSH file transfers via PuTTY
+- **Native OpenSSH** — SFTP/SCP through the Windows OpenSSH client, with
+  `~/.ssh/config`, `Include`, `ProxyJump`, key authentication and ssh-agent
+- **SFTP/SCP** — SSH file transfers via PuTTY (fallback backend)
 - **FTP/FTPS** — File Transfer Protocol with TLS via FileZilla
 - **WebDAV/HTTPS** — Web-based distributed authoring via neon
 - **Amazon S3** — S3-compatible storage with TLS and custom CA certificates
@@ -35,6 +37,7 @@ Far3_x64\Far.exe
 |-------|-------------|
 | [Getting Started](docs/getting-started.md) | Build, install, and first connection |
 | [User Guide](docs/user-guide.md) | Protocols, features, and internationalization |
+| [Native OpenSSH](docs/openssh.md) | OpenSSH backend, `~/.ssh/config` hosts and limitations |
 | [Architecture](docs/architecture.md) | Project structure, layers, and patterns |
 | [Contributing](docs/contributing.md) | Code conventions, build rules, and development workflow |
 | [Testing](docs/testing.md) | Manual regression testing and verification |

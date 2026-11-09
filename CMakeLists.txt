@@ -54,6 +54,13 @@ if(OPT_CREATE_TESTS)
     enable_testing()
 endif()
 
+# Standalone OpenSSH configuration parser tests. Kept separate from the
+# legacy test targets, which are not maintained for current toolchains.
+set(OPT_CREATE_OPENSSH_TESTS OFF CACHE BOOL "Enable OpenSSH configuration parser tests")
+if(OPT_CREATE_OPENSSH_TESTS)
+    enable_testing()
+endif()
+
 # IDE suppor
 set(OPT_COMPILE_COMMANDS OFF CACHE BOOL "Generate compile_commands.json for IDE support")
 if(OPT_COMPILE_COMMANDS)

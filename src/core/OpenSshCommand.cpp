@@ -216,7 +216,7 @@ std::vector<UnicodeString> BuildSshArguments(const TSessionData * Data, bool Scp
   // End of options; the destination is a configuration alias and may contain
   // characters that look like options.
   Arguments.push_back(L"--");
-  Arguments.push_back(Data->GetHostName());
+  Arguments.push_back(Data->GetHostNameExpanded());
 
   if (!Scp)
   {

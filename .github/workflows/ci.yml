@@ -74,7 +74,8 @@ jobs:
             -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
             -DPROJECT_PLATFORM=${{ matrix.platform }} \
             -DOPT_CREATE_PLUGIN_DIR=ON \
-            -DOPT_CREATE_TESTS=${{ matrix.tests }} \
+            -DOPT_CREATE_TESTS=OFF \
+            -DOPT_CREATE_OPENSSH_TESTS=${{ matrix.tests }} \
             -DOPT_USE_UNITY_BUILD=OFF \
             2>&1 | tee configure-${{ matrix.build }}.log
 

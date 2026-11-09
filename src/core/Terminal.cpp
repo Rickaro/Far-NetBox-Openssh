@@ -1689,7 +1689,7 @@ void TTerminal::InternalDoTryOpen()
   }
 
   DebugAssert(FTunnel == nullptr);
-  if (FSessionData->GetTunnel() && !OpenSsh::CanUseOpenSsh(FSessionData))
+  if (FSessionData->GetTunnel() && !OpenSsh::CanUseOpenSsh(FSessionData.get()))
   {
     DoInformation(LoadStr(OPEN_TUNNEL), true);
     LogEvent("Opening tunnel.");

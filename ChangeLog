@@ -1,3 +1,14 @@
+## [Unreleased]
+
+### Added
+
+ * Native OpenSSH backend: SFTP/SCP sessions can use the Windows OpenSSH client
+   (`ssh.exe`) instead of the bundled PuTTY engine, enabling `~/.ssh/config`,
+   `Include`, `ProxyJump`, key authentication and ssh-agent
+ * Hosts from `~/.ssh/config` are shown in the stored-session panel; `Include`
+   files are displayed as folders
+ * `NetBoxAskpass.exe` helper for password, passphrase and host-key prompts
+
 ## [26.7.3.617] - 2026-07-24
 
  * Fix FTP session hang at "Starting the session..."

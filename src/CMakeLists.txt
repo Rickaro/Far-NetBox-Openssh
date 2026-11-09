@@ -98,15 +98,16 @@ netbox_setup_plugin_installation(NetBox)
 
 add_executable(NetBoxAskpass NetBoxAskpass/NetBoxAskpass.cpp)
 netbox_apply_compile_options(NetBoxAskpass)
-target_link_libraries(NetBoxAskpass PRIVATE user32.lib kernel32.lib)
+target_link_libraries(NetBoxAskpass PRIVATE user32.lib gdi32.lib kernel32.lib)
 set_target_properties(NetBoxAskpass PROPERTIES
-  LINK_FLAGS "/SUBSYSTEM:CONSOLE"
+  LINK_FLAGS "/SUBSYSTEM:CONSOLE /ENTRY:wmainCRTStartup"
   OUTPUT_NAME "NetBoxAskpass"
 )
 
 if(OPT_CREATE_PLUGIN_DIR)
   set(NB_PLUGIN_OUT_DIR "${CMAKE_SOURCE_DIR}/Far3_${PROJECT_PLATFORM}/Plugins/NetBox")
   add_custom_command(TARGET NetBoxAskpass POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${NB_PLUGIN_OUT_DIR}"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
       "$<TARGET_FILE:NetBoxAskpass>"
       "${NB_PLUGIN_OUT_DIR}/NetBoxAskpass.exe"
@@ -146,6 +147,7 @@ if(OPT_CREATE_TESTS)
     ${CMAKE_SOURCE_DIR}/src/base/Common.cpp
   )
   netbox_configure_target(test_sessionhistory)
+  target_link_options(test_sessionhistory PRIVATE /SUBSYSTEM:CONSOLE)
   add_test(NAME sessionhistory COMMAND test_sessionhistory)
   add_executable(test_secure_string
     ${CMAKE_SOURCE_DIR}/tests/core/test_secure_string.cpp
@@ -158,6 +160,7 @@ if(OPT_CREATE_TESTS)
     ${CMAKE_SOURCE_DIR}/src/base/Common.cpp
   )
   netbox_configure_target(test_secure_string)
+  target_link_options(test_secure_string PRIVATE /SUBSYSTEM:CONSOLE)
   add_test(NAME secure_string COMMAND test_secure_string)
 
   add_executable(test_named_object
@@ -172,8 +175,31 @@ if(OPT_CREATE_TESTS)
     ${CMAKE_SOURCE_DIR}/src/base/Common.cpp
   )
   netbox_configure_target(test_named_object)
+  target_link_options(test_named_object PRIVATE /SUBSYSTEM:CONSOLE)
   add_test(NAME named_object COMMAND test_named_object)
 
+  add_executable(test_master_password
+    ${CMAKE_SOURCE_DIR}/tests/integration/test_master_password.cpp
+    ${CMAKE_SOURCE_DIR}/src/base/SecureString.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/Cryptography.cpp
+    ${CMAKE_SOURCE_DIR}/src/base/UnicodeString.cpp
+    ${CMAKE_SOURCE_DIR}/src/base/Classes.cpp
+    ${CMAKE_SOURCE_DIR}/src/base/Sysutils.cpp
+    ${CMAKE_SOURCE_DIR}/src/base/StrUtils.cpp
+    ${CMAKE_SOURCE_DIR}/src/base/WideStrUtils.cpp
+    ${CMAKE_SOURCE_DIR}/src/base/Common.cpp
+  )
+  netbox_configure_target(test_master_password)
+  target_link_options(test_master_password PRIVATE /SUBSYSTEM:CONSOLE)
+  target_link_libraries(test_master_password PRIVATE ssleay32 libeay32)
+  add_test(NAME master_password COMMAND test_master_password)
+endif()
+
+#===============================================================================
+# OpenSSH configuration parser tests
+#===============================================================================
+
+if(OPT_CREATE_OPENSSH_TESTS)
   add_executable(test_openssh_config
     ${CMAKE_SOURCE_DIR}/tests/core/test_openssh_config.cpp
     ${CMAKE_SOURCE_DIR}/src/core/OpenSshConfig.cpp
@@ -188,19 +214,6 @@ if(OPT_CREATE_TESTS)
     ${CMAKE_SOURCE_DIR}/src/nbcore/nbutils.cpp
   )
   netbox_configure_target(test_openssh_config)
+  target_link_options(test_openssh_config PRIVATE /SUBSYSTEM:CONSOLE)
   add_test(NAME openssh_config COMMAND test_openssh_config)
-  add_executable(test_master_password
-    ${CMAKE_SOURCE_DIR}/tests/integration/test_master_password.cpp
-    ${CMAKE_SOURCE_DIR}/src/base/SecureString.cpp
-    ${CMAKE_SOURCE_DIR}/src/core/Cryptography.cpp
-    ${CMAKE_SOURCE_DIR}/src/base/UnicodeString.cpp
-    ${CMAKE_SOURCE_DIR}/src/base/Classes.cpp
-    ${CMAKE_SOURCE_DIR}/src/base/Sysutils.cpp
-    ${CMAKE_SOURCE_DIR}/src/base/StrUtils.cpp
-    ${CMAKE_SOURCE_DIR}/src/base/WideStrUtils.cpp
-    ${CMAKE_SOURCE_DIR}/src/base/Common.cpp
-  )
-  netbox_configure_target(test_master_password)
-  target_link_libraries(test_master_password PRIVATE ssleay32 libeay32)
-  add_test(NAME master_password COMMAND test_master_password)
 endif()
