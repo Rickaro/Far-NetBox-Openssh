@@ -85,16 +85,13 @@ bool CanUseOpenSsh(const TSessionData * Data)
   wchar_t Override[64]{};
   const DWORD OverrideLength = ::GetEnvironmentVariableW(
     L"NETBOX_SSH_CLIENT", Override, static_cast<DWORD>(_countof(Override)));
-  if ((OverrideLength > 0) && (OverrideLength < _countof(Override)))
+  if (OverrideLength > 0 && OverrideLength < _countof(Override))
   {
     if (::lstrcmpiW(Override, L"putty") == 0)
     {
       return false;
     }
-    if (::lstrcmpiW(Override, L"openssh") != 0)
-    {
-      return false;
-    }
+    // Any other value (including "openssh") keeps the automatic selection.
   }
 
   if (!Data->GetUsesSsh() || !TProcess::IsAvailable())

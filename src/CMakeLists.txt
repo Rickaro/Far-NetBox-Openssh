@@ -199,6 +199,6 @@ if(OPT_CREATE_TESTS)
     ${CMAKE_SOURCE_DIR}/src/base/Common.cpp
   )
   netbox_configure_target(test_master_password)
-  target_link_libraries(test_master_password PRIVATE OpenSSL::SSL OpenSSL::Crypto)
+  target_link_libraries(test_master_password PRIVATE ssleay32 libeay32)
   add_test(NAME master_password COMMAND test_master_password)
 endif()

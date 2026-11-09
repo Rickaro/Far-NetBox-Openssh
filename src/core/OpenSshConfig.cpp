@@ -49,12 +49,6 @@ bool EqualsI(const std::wstring & Left, const std::wstring & Right)
   return ToLower(Left) == ToLower(Right);
 }
 
-bool StartsWithI(const std::wstring & Value, const std::wstring & Prefix)
-{
-  return (Value.size() >= Prefix.size()) &&
-    (ToLower(Value.substr(0, Prefix.size())) == ToLower(Prefix));
-}
-
 std::wstring ToWide(const UnicodeString & Value)
 {
   return std::wstring(Value.c_str(), static_cast<size_t>(Value.Length()));
@@ -162,12 +156,6 @@ bool FileExists(const std::wstring & Path)
 {
   const DWORD Attributes = ::GetFileAttributesW(Path.c_str());
   return (Attributes != INVALID_FILE_ATTRIBUTES) && ((Attributes & FILE_ATTRIBUTE_DIRECTORY) == 0);
-}
-
-bool DirectoryExists(const std::wstring & Path)
-{
-  const DWORD Attributes = ::GetFileAttributesW(Path.c_str());
-  return (Attributes != INVALID_FILE_ATTRIBUTES) && ((Attributes & FILE_ATTRIBUTE_DIRECTORY) != 0);
 }
 
 bool HasWildcard(const std::wstring & Path)

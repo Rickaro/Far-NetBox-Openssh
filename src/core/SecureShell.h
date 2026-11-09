@@ -176,7 +176,6 @@ public:
   void WaitForOpenSshData();
   void PoolOpenSshForData(uint32_t & Result);
   void CheckOpenSshConnection(int32_t Message = -1);
-  void AppendOpenSshOutput(const std::vector<uint8_t> & Data);
   int32_t Receive(uint8_t * Buf, size_t Length);
   bool Peek(uint8_t *& Buf, size_t Length) const;
   UnicodeString ReceiveLine();

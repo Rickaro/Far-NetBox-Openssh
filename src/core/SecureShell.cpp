@@ -820,6 +820,10 @@ void TSecureShell::WaitForOpenSshData()
       {
         continue;
       }
+      if (Answer != qaRetry)
+      {
+        TimeoutAbort(Answer, false);
+      }
     }
 
     constexpr uint32_t Step = 10;
