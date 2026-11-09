@@ -113,6 +113,7 @@ if(OPT_CREATE_PLUGIN_DIR)
       "${NB_PLUGIN_OUT_DIR}/NetBoxAskpass.exe"
     COMMENT "Copying NetBoxAskpass.exe to plugin directory"
   )
+  add_dependencies(NetBox NetBoxAskpass)
 endif()
 
 #===============================================================================

@@ -59,8 +59,11 @@ matching OpenSSH for Windows.
   needed in NetBox.
 * **Passwords and key passphrases** — OpenSSH calls `NetBoxAskpass.exe`. If the
   NetBox session has a stored password, it is passed to the helper through a
-  private environment variable. Otherwise the helper shows a small native
-  dialog.
+  private environment variable. A stored key passphrase is passed separately
+  and used when OpenSSH asks for a passphrase. Otherwise the helper shows a
+  small native dialog.
+* **PuTTY keys** — OpenSSH cannot read `.ppk` files. A session that specifies a
+  `.ppk` key automatically keeps using the PuTTY backend.
 * **Host keys** — verification is performed by OpenSSH against the standard
   `known_hosts` file. When OpenSSH asks whether to trust a new key, the helper
   shows a Yes/No dialog.
