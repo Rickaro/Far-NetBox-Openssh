@@ -150,6 +150,22 @@ if(OPT_CREATE_TESTS)
   )
   netbox_configure_target(test_named_object)
   add_test(NAME named_object COMMAND test_named_object)
+
+  add_executable(test_openssh_config
+    ${CMAKE_SOURCE_DIR}/tests/core/test_openssh_config.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/OpenSshConfig.cpp
+    ${CMAKE_SOURCE_DIR}/src/base/UnicodeString.cpp
+    ${CMAKE_SOURCE_DIR}/src/base/Classes.cpp
+    ${CMAKE_SOURCE_DIR}/src/base/Sysutils.cpp
+    ${CMAKE_SOURCE_DIR}/src/base/StrUtils.cpp
+    ${CMAKE_SOURCE_DIR}/src/base/WideStrUtils.cpp
+    ${CMAKE_SOURCE_DIR}/src/base/Common.cpp
+    ${CMAKE_SOURCE_DIR}/src/nbcore/nbmemory.cpp
+    ${CMAKE_SOURCE_DIR}/src/nbcore/nbstring.cpp
+    ${CMAKE_SOURCE_DIR}/src/nbcore/nbutils.cpp
+  )
+  netbox_configure_target(test_openssh_config)
+  add_test(NAME openssh_config COMMAND test_openssh_config)
   add_executable(test_master_password
     ${CMAKE_SOURCE_DIR}/tests/integration/test_master_password.cpp
     ${CMAKE_SOURCE_DIR}/src/base/SecureString.cpp

@@ -36,6 +36,7 @@
 #include "../core/FileOperationProgress.cpp"
 #include "../core/Queue.cpp"
 #include "../core/SecureShell.cpp"
+#include "../core/OpenSshConfig.cpp"
 #include "../core/SessionInfo.cpp"
 #include "../core/Script.cpp"
 #include "../core/CoreMain.cpp"

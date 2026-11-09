@@ -1,0 +1,112 @@
+name: CI
+
+on:
+  push:
+    branches-ignore:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - build: ci_x64
+            arch: amd64
+            platform: x64
+            tests: ON
+          - build: ci_x86
+            arch: amd64_x86
+            platform: x86
+            tests: OFF
+
+    runs-on: windows-2022
+    timeout-minutes: 60
+
+    env:
+      BUILD_TYPE: RelWithDebInfo
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Add C++ build tools to PATH
+        uses: step-security/msvc-dev-cmd@v1.13.1
+        with:
+          arch: ${{ matrix.arch }}
+
+      - name: Verify MSVC toolset
+        shell: bash
+        run: |
+          cl.exe /Bv 2>&1 | head -n 5 || true
+
+      - name: Cache CMake build
+        uses: actions/cache@v5
+        with:
+          path: |
+            build-${{ matrix.build }}/CMakeFiles
+            build-${{ matrix.build }}/.ninja_deps
+            build-${{ matrix.build }}/.ninja_log
+            build-${{ matrix.build }}/CMakeCache.txt
+          key: ${{ runner.os }}-cmake-${{ matrix.build }}-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
+          restore-keys: |
+            ${{ runner.os }}-cmake-${{ matrix.build }}-
+            ${{ runner.os }}-cmake-
+
+      - name: Configure CMake
+        shell: bash
+        run: |
+          cmake -E make_directory build-${{ matrix.build }}
+          cd build-${{ matrix.build }}
+          cmake -G "Ninja" \
+            -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+            -DPROJECT_PLATFORM=${{ matrix.platform }} \
+            -DOPT_CREATE_PLUGIN_DIR=ON \
+            -DOPT_CREATE_TESTS=${{ matrix.tests }} \
+            -DOPT_USE_UNITY_BUILD=OFF \
+            "$GITHUB_WORKSPACE"
+
+      - name: Build
+        shell: bash
+        run: cmake --build build-${{ matrix.build }} --config ${{ env.BUILD_TYPE }} --target all
+
+      - name: Run tests
+        if: matrix.tests == 'ON'
+        shell: bash
+        working-directory: build-${{ matrix.build }}
+        run: ctest --output-on-failure --timeout 120
+
+      - name: Verify plugin directory
+        shell: bash
+        run: |
+          PLUGIN_DIR="./Far3_${{ matrix.platform }}/Plugins/NetBox"
+          if [[ ! -d "$PLUGIN_DIR" ]]; then
+            echo "::error::Plugin directory not found: $PLUGIN_DIR"
+            exit 1
+          fi
+          ls -la "$PLUGIN_DIR"
+
+      - name: Upload plugin
+        uses: actions/upload-artifact@v7
+        with:
+          name: NetBox.${{ matrix.platform }}
+          path: Far3_${{ matrix.platform }}/Plugins/NetBox/**
+
+      - name: Upload test logs
+        if: failure() && matrix.tests == 'ON'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ctest-logs-${{ matrix.platform }}
+          path: build-${{ matrix.build }}/Testing/**
