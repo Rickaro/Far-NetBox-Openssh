@@ -68,19 +68,42 @@ jobs:
       - name: Configure CMake
         shell: bash
         run: |
+          set -o pipefail
           cmake -E make_directory build-${{ matrix.build }}
-          cd build-${{ matrix.build }}
-          cmake -G "Ninja" \
+          cmake -S . -B build-${{ matrix.build }} -G "Ninja" \
             -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
             -DPROJECT_PLATFORM=${{ matrix.platform }} \
             -DOPT_CREATE_PLUGIN_DIR=ON \
             -DOPT_CREATE_TESTS=${{ matrix.tests }} \
             -DOPT_USE_UNITY_BUILD=OFF \
-            "$GITHUB_WORKSPACE"
+            2>&1 | tee configure-${{ matrix.build }}.log
 
       - name: Build
         shell: bash
-        run: cmake --build build-${{ matrix.build }} --config ${{ env.BUILD_TYPE }} --target all
+        run: |
+          set -o pipefail
+          cmake --build build-${{ matrix.build }} --config ${{ env.BUILD_TYPE }} --target all \
+            2>&1 | tee build-${{ matrix.build }}.log
+
+      - name: Report build errors
+        if: failure()
+        shell: bash
+        run: |
+          for LOG in configure-${{ matrix.build }}.log build-${{ matrix.build }}.log; do
+            if [[ ! -f "$LOG" ]]; then
+              continue
+            fi
+            echo "::group::Diagnostics from $LOG"
+            grep -nE "(error|Error) (C[0-9]{4}|LNK[0-9]{4}|MSB[0-9]+)|CMake Error|fatal error" "$LOG" \
+              | head -80 \
+              | while IFS= read -r LINE; do
+                  echo "::error::$LINE"
+                done
+            echo "::endgroup::"
+            echo "::group::Tail of $LOG"
+            tail -60 "$LOG"
+            echo "::endgroup::"
+          done
 
       - name: Run tests
         if: matrix.tests == 'ON'

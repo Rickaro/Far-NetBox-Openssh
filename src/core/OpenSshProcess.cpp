@@ -451,7 +451,12 @@ void TProcess::Pump(std::vector<uint8_t> & Stdout, std::string & Stderr)
 {
   std::vector<char> Buffer;
   ReadPipe(static_cast<HANDLE>(FStdout), Buffer, FStdoutEof);
-  Stdout.insert(Stdout.end(), Buffer.begin(), Buffer.end());
+  const size_t OldSize = Stdout.size();
+  Stdout.resize(OldSize + Buffer.size());
+  for (size_t Index = 0; Index < Buffer.size(); ++Index)
+  {
+    Stdout[OldSize + Index] = static_cast<uint8_t>(Buffer[Index]);
+  }
 
   Buffer.clear();
   ReadPipe(static_cast<HANDLE>(FStderr), Buffer, FStderrEof);

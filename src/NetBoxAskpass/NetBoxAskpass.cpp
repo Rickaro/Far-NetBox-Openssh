@@ -29,7 +29,6 @@ constexpr int32_t CancelId = IDCANCEL;
 HWND DialogWindow = nullptr;
 HWND PromptLabel = nullptr;
 HWND EditBox = nullptr;
-WNDPROC EditProc = nullptr;
 std::wstring Answer;
 bool Confirmed = false;
 bool HostKeyPrompt = false;
@@ -77,16 +76,6 @@ void WriteAnswer(const std::wstring & Value)
     DWORD Written = 0;
     ::WriteFile(Output, Utf8.data(), static_cast<DWORD>(Utf8.size()), &Written, nullptr);
   }
-}
-
-LRESULT CALLBACK EditWindowProc(HWND Window, UINT Message, WPARAM WParam, LPARAM LParam)
-{
-  if ((Message == WM_KEYDOWN) && (WParam == VK_RETURN))
-  {
-    ::PostMessageW(DialogWindow, WM_COMMAND, OkId, 0);
-    return 0;
-  }
-  return ::CallWindowProcW(EditProc, Window, Message, WParam, LParam);
 }
 
 void LayoutControls(HWND Window)
@@ -200,8 +189,8 @@ bool RunDialog(const std::wstring & Prompt)
   ::SendMessageW(OkButton, WM_SETFONT, reinterpret_cast<WPARAM>(Font), TRUE);
   ::SendMessageW(CancelButton, WM_SETFONT, reinterpret_cast<WPARAM>(Font), TRUE);
 
-  EditProc = reinterpret_cast<WNDPROC>(::SetWindowLongPtrW(EditBox, GWLP_WNDPROC,
-    reinterpret_cast<LONG_PTR>(EditWindowProc)));
+
+
 
   LayoutControls(Window);
   ::ShowWindow(Window, SW_SHOW);
@@ -217,6 +206,10 @@ bool RunDialog(const std::wstring & Prompt)
       {
         ::DestroyWindow(Window);
         break;
+      }
+      if (Message.wParam == VK_RETURN)
+      {
+        ::PostMessageW(Window, WM_COMMAND, OkId, 0);
       }
     }
     ::TranslateMessage(&Message);
