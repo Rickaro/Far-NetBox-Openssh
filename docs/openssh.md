@@ -57,16 +57,16 @@ matching OpenSSH for Windows.
 
 * **Keys and ssh-agent** — handled directly by OpenSSH. No configuration is
   needed in NetBox.
-* **Passwords and key passphrases** — OpenSSH calls `NetBoxAskpass.exe`. If the
-  NetBox session has a stored password, it is passed to the helper through a
-  private environment variable. A stored key passphrase is passed separately
-  and used when OpenSSH asks for a passphrase. Otherwise the helper shows a
-  small native dialog.
+* **Passwords and key passphrases** — OpenSSH calls `NetBoxAskpass.exe`. The
+  helper asks the plugin through a per-session named pipe, and the plugin shows
+  the standard Far password dialog. A stored password/passphrase is used
+  without a dialog. If the plugin cannot be reached, the helper falls back to
+  its own native window.
 * **PuTTY keys** — OpenSSH cannot read `.ppk` files. A session that specifies a
   `.ppk` key automatically keeps using the PuTTY backend.
 * **Host keys** — verification is performed by OpenSSH against the standard
-  `known_hosts` file. When OpenSSH asks whether to trust a new key, the helper
-  shows a Yes/No dialog.
+  `known_hosts` file. When OpenSSH asks whether to trust a new key, the plugin
+  shows the Far Yes/No dialog.
 
 Passwords are written to the helper as UTF-8. ASCII passwords are unaffected;
 for non-ASCII passwords prefer key authentication.
@@ -117,4 +117,57 @@ semantics identical to the PuTTY-based implementation.
 | "ssh.exe not found" in the log | Install **OpenSSH Client** in Windows optional features, or set `NETBOX_SSH_EXE` |
 | Host key prompt never appears | `NetBoxAskpass.exe` must be next to `NetBox.dll` |
 | Authentication hangs | Close the askpass window and retry; check `known_hosts` permissions |
+| Key authentication asks for a password | See the diagnostic steps below |
 | Need the old behaviour | Set `NETBOX_SSH_CLIENT=putty` before starting Far Manager |
+
+### Enabling the log
+
+Logging is disabled by default, and the default file is **not**
+`%LOCALAPPDATA%\NetBox\netbox.log`. It is:
+
+```
+%TEMP%\<session name>.log
+```
+
+Enable it in the plugin menu: open NetBox, press `Ctrl+Shift+W`, choose
+**Logging settings**, tick **Enable logging** and **Log to file**. The dialog
+shows the actual expanded path.
+
+For OpenSSH-level diagnostics set `NETBOX_SSH_VERBOSE=1` before starting Far.
+The plugin then passes `-o LogLevel=DEBUG1` to `ssh`, and the debug lines land
+in the session log.
+
+### Key authentication asks for a password
+
+First reproduce outside Far with the same environment:
+
+```cmd
+where ssh
+ssh -V
+echo %HOME%
+echo %USERPROFILE%
+ssh -G <alias> | findstr /i "identityfile user hostname port"
+ssh -v <alias>
+```
+
+Typical causes:
+
+* `IdentityFile` points to a `.ppk` file — OpenSSH cannot read it; convert it to
+  OpenSSH format (`ssh-keygen -p -f key.ppk` in PuTTY tools or export from
+  PuTTYgen).
+* `HOME` is set to a different directory than `%USERPROFILE%`, so ssh looks for
+  keys and `known_hosts` elsewhere.
+* Windows OpenSSH rejects the private key because its ACL is too open. `ssh -v`
+  prints `Permissions for ... are too open`. Fix the ACL so that only the
+  current user has access, e.g. in PowerShell:
+  ```powershell
+  icacls "$env:USERPROFILE\.ssh\id_ed25519" /inheritance:r /grant:r "$env:USERNAME:(R)"
+  ```
+* The key is passphrase-protected and the passphrase is unknown or not in
+  ssh-agent. The askpass dialog should say “passphrase”, not “password”.
+* The server does not accept that key for the selected user. Compare the
+  `Offering public key` / `Server accepts key` lines of `ssh -v`.
+
+If ssh works in the console but the plugin still asks for a password, enable
+`NETBOX_SSH_VERBOSE=1` and compare the `Starting OpenSSH client:` line in the
+session log with the working command.

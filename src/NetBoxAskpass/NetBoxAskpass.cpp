@@ -15,8 +15,13 @@
 
 #include <windows.h>
 
+#include <cstdlib>
+#include <cstring>
+#include <cwchar>
 #include <string>
 #include <vector>
+
+#include <OpenSshAskpassProtocol.h>
 
 namespace
 {
@@ -56,6 +61,82 @@ bool ContainsNoCase(const std::wstring & Value, const wchar_t * Needle)
   ::CharLowerBuffW(&LowerValue[0], static_cast<DWORD>(LowerValue.size()));
   ::CharLowerBuffW(&LowerNeedle[0], static_cast<DWORD>(LowerNeedle.size()));
   return LowerValue.find(LowerNeedle) != std::wstring::npos;
+}
+
+// Asks the plugin to show the native Far dialog through a named pipe. Returns
+// false only when no pipe is configured; when a pipe is configured but cannot
+// be reached, the answer is left empty so that ssh fails instead of showing a
+// second GUI dialog.
+bool TryPipe(const std::wstring & Prompt, bool Confirm, std::wstring & Answer)
+{
+  Answer.clear();
+  wchar_t PipeName[512]{};
+  DWORD Length = ::GetEnvironmentVariableW(L"NETBOX_ASKPASS_PIPE",
+    PipeName, static_cast<DWORD>(_countof(PipeName)));
+  if (Length == 0)
+  {
+    return false;
+  }
+
+  wchar_t TokenText[64]{};
+  Length = ::GetEnvironmentVariableW(L"NETBOX_ASKPASS_TOKEN",
+    TokenText, static_cast<DWORD>(_countof(TokenText)));
+  unsigned long long Token = 0;
+  if (Length > 0)
+  {
+    Token = std::wcstoull(TokenText, nullptr, 10);
+  }
+
+  HANDLE Pipe = ::CreateFileW(PipeName, GENERIC_READ | GENERIC_WRITE, 0, nullptr,
+    OPEN_EXISTING, 0, nullptr);
+  if ((Pipe == INVALID_HANDLE_VALUE) && (::GetLastError() == ERROR_PIPE_BUSY))
+  {
+    ::WaitNamedPipeW(PipeName, 2000);
+    Pipe = ::CreateFileW(PipeName, GENERIC_READ | GENERIC_WRITE, 0, nullptr,
+      OPEN_EXISTING, 0, nullptr);
+  }
+  if (Pipe == INVALID_HANDLE_VALUE)
+  {
+    return true;
+  }
+
+  OpenSshAskpass::Request Request{};
+  Request.Signature = OpenSshAskpass::Magic;
+  Request.Type = static_cast<uint32_t>(Confirm ?
+    OpenSshAskpass::RequestType::Confirm : OpenSshAskpass::RequestType::Secret);
+  Request.Token = Token;
+  const size_t LengthToCopy =
+    (Prompt.size() < (OpenSshAskpass::TextCapacity - 1)) ? Prompt.size() : (OpenSshAskpass::TextCapacity - 1);
+  if (LengthToCopy > 0)
+  {
+    memcpy(Request.Prompt, Prompt.c_str(), LengthToCopy * sizeof(wchar_t));
+  }
+  Request.Prompt[LengthToCopy] = L'\0';
+
+  DWORD Written = 0;
+  if (!::WriteFile(Pipe, &Request, static_cast<DWORD>(sizeof(Request)), &Written, nullptr) ||
+    (Written != sizeof(Request)))
+  {
+    ::CloseHandle(Pipe);
+    return true;
+  }
+
+  OpenSshAskpass::Response Response{};
+  DWORD Read = 0;
+  if (!::ReadFile(Pipe, &Response, static_cast<DWORD>(sizeof(Response)), &Read, nullptr) ||
+    (Read != sizeof(Response)) ||
+    (Response.Signature != OpenSshAskpass::Magic))
+  {
+    ::CloseHandle(Pipe);
+    return true;
+  }
+
+  Response.Answer[OpenSshAskpass::TextCapacity - 1] = L'\0';
+  const uint32_t AnswerLength =
+    (Response.Length < (OpenSshAskpass::TextCapacity - 1)) ? Response.Length : (OpenSshAskpass::TextCapacity - 1);
+  Answer.assign(Response.Answer, AnswerLength);
+  ::CloseHandle(Pipe);
+  return true;
 }
 
 void WriteAnswer(const std::wstring & Value)
@@ -225,6 +306,13 @@ int wmain(int argc, wchar_t ** argv)
   const std::wstring Prompt = (argc > 1) ? argv[1] : L"Password:";
   HostKeyPrompt = ContainsNoCase(Prompt, L"yes/no") ||
     ContainsNoCase(Prompt, L"are you sure you want to continue connecting");
+
+  std::wstring PipeAnswer;
+  if (TryPipe(Prompt, HostKeyPrompt, PipeAnswer))
+  {
+    WriteAnswer(PipeAnswer);
+    return 0;
+  }
 
   if (HostKeyPrompt)
   {

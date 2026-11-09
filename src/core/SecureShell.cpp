@@ -8,6 +8,7 @@
 #include <Exceptions.h>
 #include "Interface.h"
 #include "SecureShell.h"
+#include "OpenSshAskpassProtocol.h"
 #include "OpenSshCommand.h"
 #include "OpenSshProcess.h"
 #include "TextsCore.h"
@@ -15,6 +16,12 @@
 #include "CoreMain.h"
 #include <StrUtils.hpp>
 #include <Consts.hpp>
+
+#ifndef PIPE_REJECT_REMOTE_CLIENTS
+#define PIPE_REJECT_REMOTE_CLIENTS 0x00000008
+#endif
+
+#include <cstring>
 
 #ifndef AUTO_WINSOCK
 #include <WinSock2.h>
@@ -138,6 +145,7 @@ TSecureShell::~TSecureShell() noexcept
 }
 void TSecureShell::ResetConnection()
 {
+  StopOpenSshAskpass();
   if (FOpenSshProcess != nullptr)
   {
     FOpenSshProcess->Close();
@@ -643,6 +651,8 @@ void TSecureShell::OpenOpenSsh()
   FOpenSshStderr.clear();
   FOpenSshProcess = std::make_unique<OpenSsh::TProcess>();
 
+  StartOpenSshAskpass();
+
   const bool Scp = (FSessionData->GetFSProtocol() == fsSCPonly);
   const std::vector<UnicodeString> Arguments = OpenSsh::BuildSshArguments(FSessionData, Scp);
 
@@ -658,8 +668,9 @@ void TSecureShell::OpenOpenSsh()
 
   UnicodeString Error;
   if (!FOpenSshProcess->Start(Arguments, FSessionData->GetPassword(),
-    FSessionData->GetPassphrase(), Error))
+    FSessionData->GetPassphrase(), FAskpassPipeName, FAskpassToken, Error))
   {
+    StopOpenSshAskpass();
     FOpenSshProcess.reset();
     FOpenSshMode = false;
     throw Exception(Error);
@@ -695,8 +706,162 @@ void TSecureShell::OpenOpenSsh()
   CheckOpenSshConnection();
 }
 
+bool TSecureShell::StartOpenSshAskpass()
+{
+  StopOpenSshAskpass();
+
+  static volatile LONG PipeCounter = 0;
+  const LONG PipeId = ::InterlockedIncrement(&PipeCounter);
+  const UnicodeString PipeName = FORMAT(L"\\\\.\\pipe\\NetBoxAskpass-%u-%d",
+    nb::ToUInt32(::GetCurrentProcessId()), nb::ToInt32(PipeId));
+
+  LARGE_INTEGER Performance{};
+  ::QueryPerformanceCounter(&Performance);
+  FAskpassToken =
+    (static_cast<uint64_t>(::GetTickCount()) << 32) ^
+    static_cast<uint64_t>(::GetCurrentProcessId()) ^
+    static_cast<uint64_t>(Performance.QuadPart) ^
+    static_cast<uint64_t>(reinterpret_cast<uintptr_t>(this));
+
+  const DWORD PipeMode = PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_NOWAIT;
+  FAskpassPipe = ::CreateNamedPipeW(PipeName.c_str(), PIPE_ACCESS_DUPLEX,
+    PipeMode | PIPE_REJECT_REMOTE_CLIENTS, 1,
+    static_cast<DWORD>(sizeof(OpenSshAskpass::Response)),
+    static_cast<DWORD>(sizeof(OpenSshAskpass::Request)), 0, nullptr);
+  if (FAskpassPipe == INVALID_HANDLE_VALUE)
+  {
+    // PIPE_REJECT_REMOTE_CLIENTS is not available on very old systems.
+    FAskpassPipe = ::CreateNamedPipeW(PipeName.c_str(), PIPE_ACCESS_DUPLEX,
+      PipeMode, 1,
+      static_cast<DWORD>(sizeof(OpenSshAskpass::Response)),
+      static_cast<DWORD>(sizeof(OpenSshAskpass::Request)), 0, nullptr);
+  }
+  if (FAskpassPipe == INVALID_HANDLE_VALUE)
+  {
+    FAskpassPipe = nullptr;
+    StopOpenSshAskpass();
+    return false;
+  }
+
+  FAskpassPipeName = PipeName;
+  FAskpassConnected = (::ConnectNamedPipe(FAskpassPipe, nullptr) != FALSE) ||
+    (::GetLastError() == ERROR_PIPE_CONNECTED);
+  return true;
+}
+
+void TSecureShell::StopOpenSshAskpass()
+{
+  if (FAskpassPipe != nullptr)
+  {
+    if (FAskpassConnected)
+    {
+      ::DisconnectNamedPipe(static_cast<HANDLE>(FAskpassPipe));
+    }
+    ::CloseHandle(static_cast<HANDLE>(FAskpassPipe));
+    FAskpassPipe = nullptr;
+  }
+  FAskpassConnected = false;
+  FAskpassServicing = false;
+  FAskpassToken = 0;
+  FAskpassPipeName.Clear();
+}
+
+void TSecureShell::ServiceOpenSshAskpass()
+{
+  if ((FAskpassPipe == nullptr) || FAskpassServicing)
+  {
+    return;
+  }
+
+  FAskpassServicing = true;
+  try
+  {
+    if (!FAskpassConnected)
+    {
+      FAskpassConnected = (::ConnectNamedPipe(static_cast<HANDLE>(FAskpassPipe), nullptr) != FALSE) ||
+        (::GetLastError() == ERROR_PIPE_CONNECTED);
+    }
+
+    if (FAskpassConnected)
+    {
+      DWORD Available = 0;
+      if (!::PeekNamedPipe(static_cast<HANDLE>(FAskpassPipe), nullptr, 0, nullptr, &Available, nullptr))
+      {
+        ::DisconnectNamedPipe(static_cast<HANDLE>(FAskpassPipe));
+        FAskpassConnected = false;
+      }
+      else if (Available >= sizeof(OpenSshAskpass::Request))
+      {
+        OpenSshAskpass::Request Request{};
+        DWORD Read = 0;
+        const bool Valid =
+          (::ReadFile(static_cast<HANDLE>(FAskpassPipe), &Request, static_cast<DWORD>(sizeof(Request)), &Read, nullptr) != FALSE) &&
+          (Read == sizeof(Request)) &&
+          (Request.Signature == OpenSshAskpass::Magic) &&
+          (Request.Token == FAskpassToken);
+        if (Valid)
+        {
+          Request.Prompt[OpenSshAskpass::TextCapacity - 1] = L'\0';
+          const UnicodeString Prompt(Request.Prompt);
+          UnicodeString Answer;
+
+          if (Request.Type == static_cast<uint32_t>(OpenSshAskpass::RequestType::Confirm))
+          {
+            const uint32_t Result = FUI->QueryUser(Prompt, nullptr, qaYes | qaNo, nullptr);
+            Answer = (Result == qaYes) ? L"yes" : L"no";
+          }
+          else
+          {
+            TPromptKind Kind = pkPassword;
+            if (::ContainsText(Prompt, L"passphrase"))
+            {
+              Kind = pkPassphrase;
+            }
+            else if (!::ContainsText(Prompt, L"password"))
+            {
+              // Verification codes and other keyboard-interactive challenges.
+              Kind = pkKeybInteractive;
+            }
+
+            std::unique_ptr<TStrings> Prompts(std::make_unique<TStringList>());
+            std::unique_ptr<TStrings> Results(std::make_unique<TStringList>());
+            Prompts->Add(Prompt);
+            Results->Add(L"");
+            if (FUI->PromptUser(FSessionData, Kind, FSessionData->GetHostNameExpanded(),
+              UnicodeString(), Prompts.get(), Results.get()))
+            {
+              Answer = Results->GetString(0);
+            }
+          }
+
+          OpenSshAskpass::Response Response{};
+          Response.Signature = OpenSshAskpass::Magic;
+          const int32_t Length = (Answer.Length() < static_cast<int32_t>(OpenSshAskpass::TextCapacity - 1)) ?
+            Answer.Length() : static_cast<int32_t>(OpenSshAskpass::TextCapacity - 1);
+          Response.Length = nb::ToUInt32(Length);
+          memcpy(Response.Answer, Answer.c_str(), static_cast<size_t>(Length) * sizeof(wchar_t));
+          DWORD Written = 0;
+          ::WriteFile(static_cast<HANDLE>(FAskpassPipe), &Response, static_cast<DWORD>(sizeof(Response)), &Written, nullptr);
+          ::FlushFileBuffers(static_cast<HANDLE>(FAskpassPipe));
+        }
+
+        ::DisconnectNamedPipe(static_cast<HANDLE>(FAskpassPipe));
+        FAskpassConnected = false;
+      }
+    }
+  }
+  catch (...)
+  {
+    FAskpassServicing = false;
+    throw;
+  }
+  FAskpassServicing = false;
+}
+
 void TSecureShell::PumpOpenSsh()
 {
+  ServiceOpenSshAskpass();
+
   if (FOpenSshProcess == nullptr)
   {
     return;
@@ -838,6 +1003,7 @@ void TSecureShell::CloseOpenSsh()
 {
   LogEvent("Closing OpenSSH connection.");
   FClosed = true;
+  StopOpenSshAskpass();
   if (FOpenSshProcess != nullptr)
   {
     FOpenSshProcess->Close();

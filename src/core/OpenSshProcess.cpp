@@ -243,7 +243,8 @@ TProcess::~TProcess() noexcept
 }
 
 bool TProcess::Start(const std::vector<UnicodeString> & Arguments,
-  const UnicodeString & Password, const UnicodeString & Passphrase, UnicodeString & Error)
+  const UnicodeString & Password, const UnicodeString & Passphrase,
+  const UnicodeString & AskpassPipe, uint64_t AskpassToken, UnicodeString & Error)
 {
   Close();
 
@@ -279,6 +280,8 @@ bool TProcess::Start(const std::vector<UnicodeString> & Arguments,
   // Always override: an inherited value must never authenticate a session.
   EnvironmentOverrides.emplace_back(L"NETBOX_ASKPASS_PASSWORD", ToWide(Password));
   EnvironmentOverrides.emplace_back(L"NETBOX_ASKPASS_PASSPHRASE", ToWide(Passphrase));
+  EnvironmentOverrides.emplace_back(L"NETBOX_ASKPASS_PIPE", ToWide(AskpassPipe));
+  EnvironmentOverrides.emplace_back(L"NETBOX_ASKPASS_TOKEN", std::to_wstring(AskpassToken));
   const std::vector<wchar_t> Environment = BuildEnvironment(EnvironmentOverrides);
 
   SECURITY_ATTRIBUTES SecurityAttributes{};

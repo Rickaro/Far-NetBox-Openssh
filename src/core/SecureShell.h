@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -109,6 +110,11 @@ private:
   bool FOpenSshMode{false};
   int32_t FOpenSshPumpDepth{0};
   std::string FOpenSshStderr;
+  HANDLE FAskpassPipe{nullptr};
+  bool FAskpassConnected{false};
+  bool FAskpassServicing{false};
+  uint64_t FAskpassToken{0};
+  UnicodeString FAskpassPipeName;
   gsl::owner<LogContext *> FLogCtx{nullptr};
   nb::set_t<UnicodeString> FLoggedKnownHostKeys;
 
@@ -172,6 +178,9 @@ public:
   void KeepAlive();
   void OpenOpenSsh();
   void CloseOpenSsh();
+  bool StartOpenSshAskpass();
+  void StopOpenSshAskpass();
+  void ServiceOpenSshAskpass();
   void PumpOpenSsh();
   void WaitForOpenSshData();
   void PoolOpenSshForData(uint32_t & Result);

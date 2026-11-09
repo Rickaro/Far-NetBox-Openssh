@@ -98,6 +98,7 @@ netbox_setup_plugin_installation(NetBox)
 
 add_executable(NetBoxAskpass NetBoxAskpass/NetBoxAskpass.cpp)
 netbox_apply_compile_options(NetBoxAskpass)
+target_include_directories(NetBoxAskpass PRIVATE ${CMAKE_SOURCE_DIR}/src/include)
 target_link_libraries(NetBoxAskpass PRIVATE user32.lib gdi32.lib kernel32.lib)
 set_target_properties(NetBoxAskpass PROPERTIES
   LINK_FLAGS "/SUBSYSTEM:CONSOLE /ENTRY:wmainCRTStartup"

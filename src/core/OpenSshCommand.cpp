@@ -171,7 +171,10 @@ std::vector<UnicodeString> BuildSshArguments(const TSessionData * Data, bool Scp
 
   const bool Askpass = !TProcess::FindAskpassExecutable().IsEmpty();
   AddOption(Arguments, L"BatchMode", Askpass ? L"no" : L"yes");
-  AddOption(Arguments, L"LogLevel", L"ERROR");
+  wchar_t VerboseValue[8]{};
+  const bool Verbose = (::GetEnvironmentVariableW(L"NETBOX_SSH_VERBOSE", VerboseValue,
+    static_cast<DWORD>(_countof(VerboseValue))) > 0);
+  AddOption(Arguments, L"LogLevel", Verbose ? L"DEBUG1" : L"ERROR");
   if (Askpass)
   {
     AddOption(Arguments, L"NumberOfPasswordPrompts", 1);
