@@ -17,6 +17,7 @@
 #include "Interface.h"
 #include "RemoteFiles.h"
 #include "SecureShell.h"
+#include "OpenSshCommand.h"
 #include "ScpFileSystem.h"
 #include "SftpFileSystem.h"
 #include "FtpFileSystem.h"
@@ -1688,7 +1689,7 @@ void TTerminal::InternalDoTryOpen()
   }
 
   DebugAssert(FTunnel == nullptr);
-  if (FSessionData->GetTunnel())
+  if (FSessionData->GetTunnel() && !OpenSsh::CanUseOpenSsh(FSessionData))
   {
     DoInformation(LoadStr(OPEN_TUNNEL), true);
     LogEvent("Opening tunnel.");
@@ -1700,6 +1701,10 @@ void TTerminal::InternalDoTryOpen()
     DoInformation(LoadStr(USING_TUNNEL), false);
     LogEvent(FORMAT("Connecting via tunnel interface %s:%d.",
       FSessionData->GetHostNameExpanded(), FSessionData->GetPortNumber()));
+  }
+  else if (FSessionData->GetTunnel())
+  {
+    LogEvent("Using OpenSSH -J instead of the internal tunnel.");
   }
   else
   {

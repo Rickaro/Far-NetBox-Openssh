@@ -1,6 +1,9 @@
 
 #pragma once
 
+#include <string>
+#include <vector>
+
 #include "PuttyIntf.h"
 #include "Configuration.h"
 #include "SessionData.h"
@@ -26,6 +29,11 @@ struct LogContext;
 struct ScpSeat;
 class TSFTPFileSystem;
 enum TSecureShellMode { ssmNone, ssmUploading, ssmDownloading };
+
+namespace OpenSsh
+{
+class TProcess;
+}
 
 class TSecureShell : public TObject
 {
@@ -97,6 +105,10 @@ private:
   std::unique_ptr<callback_set> FCallbackSet;
   std::unique_ptr<ScpLogPolicy> FLogPolicy{nullptr};
   std::unique_ptr<ScpSeat> FSeat{nullptr};
+  std::unique_ptr<OpenSsh::TProcess> FOpenSshProcess;
+  bool FOpenSshMode{false};
+  int32_t FOpenSshPumpDepth{0};
+  std::string FOpenSshStderr;
   gsl::owner<LogContext *> FLogCtx{nullptr};
   nb::set_t<UnicodeString> FLoggedKnownHostKeys;
 
@@ -158,6 +170,13 @@ public:
   void Open();
   void Close();
   void KeepAlive();
+  void OpenOpenSsh();
+  void CloseOpenSsh();
+  void PumpOpenSsh();
+  void WaitForOpenSshData();
+  void PoolOpenSshForData(uint32_t & Result);
+  void CheckOpenSshConnection(int32_t Message = -1);
+  void AppendOpenSshOutput(const std::vector<uint8_t> & Data);
   int32_t Receive(uint8_t * Buf, size_t Length);
   bool Peek(uint8_t *& Buf, size_t Length) const;
   UnicodeString ReceiveLine();

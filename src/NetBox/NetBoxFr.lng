@@ -1464,3 +1464,4 @@
 "Édition du fichier distant"
 "Entrez le nom du &fichier distant :"
 "You are at the root remote directory. Disconnect from the server?"
+"Cette session provient du fichier de configuration OpenSSH et est en lecture seule. Modifiez ~/.ssh/config."

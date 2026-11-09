@@ -419,6 +419,7 @@ void TSessionData::Default()
   FModified = false;
   FSource = ::ssNone;
   FSaveOnly = false;
+  FFromOpenSshConfig = false;
 
   // add also to TSessionLog::AddStartupInfo()
 }

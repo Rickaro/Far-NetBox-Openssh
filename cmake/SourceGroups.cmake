@@ -187,6 +187,8 @@ function(netbox_define_core_sources)
     core/Queue.cpp
     core/SecureShell.cpp
     core/OpenSshConfig.cpp
+    core/OpenSshProcess.cpp
+    core/OpenSshCommand.cpp
     core/SessionInfo.cpp
     core/CoreMain.cpp
     core/CopyParam.cpp

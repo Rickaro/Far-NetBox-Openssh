@@ -1,6 +1,8 @@
 #pragma once
 
 #include <atomic>
+#include <memory>
+#include <vector>
 #include <Interface.h>
 #include "FarPlugin.h"
 #include <FileOperationProgress.h>
@@ -138,6 +140,7 @@ protected:
     bool Duplicate);
   void FocusSession(const TSessionData * Data);
   void DeleteSession(TSessionData * Data, void * AParam);
+  void LoadOpenSshSessions();
   void ProcessSessions(TObjectList * PanelItems,
     TProcessSessionEvent && ProcessSession, void * AParam);
   void ExportSession(TSessionData * Data, void * AParam);
@@ -363,6 +366,8 @@ private:
   UnicodeString FNewSessionsFolder;
   UnicodeString FPrevSessionName;
   UnicodeString FFocusFileName;
+  std::vector<std::unique_ptr<TSessionData>> FOpenSshSessions;
+  bool FOpenSshSessionsLoaded{false};
   std::atomic<bool> FQueueStatusInvalidated{false};
   std::atomic<bool> FQueueItemInvalidated{false};
   std::atomic<bool> FRefreshLocalDirectory{false};

@@ -93,9 +93,30 @@ endif()
 netbox_setup_plugin_installation(NetBox)
 
 #===============================================================================
-# tinylog Unit Tests
+# NetBoxAskpass helper for the external OpenSSH backend
 #===============================================================================
 
+add_executable(NetBoxAskpass NetBoxAskpass/NetBoxAskpass.cpp)
+netbox_apply_compile_options(NetBoxAskpass)
+target_link_libraries(NetBoxAskpass PRIVATE user32.lib kernel32.lib)
+set_target_properties(NetBoxAskpass PROPERTIES
+  LINK_FLAGS "/SUBSYSTEM:CONSOLE"
+  OUTPUT_NAME "NetBoxAskpass"
+)
+
+if(OPT_CREATE_PLUGIN_DIR)
+  set(NB_PLUGIN_OUT_DIR "${CMAKE_SOURCE_DIR}/Far3_${PROJECT_PLATFORM}/Plugins/NetBox")
+  add_custom_command(TARGET NetBoxAskpass POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      "$<TARGET_FILE:NetBoxAskpass>"
+      "${NB_PLUGIN_OUT_DIR}/NetBoxAskpass.exe"
+    COMMENT "Copying NetBoxAskpass.exe to plugin directory"
+  )
+endif()
+
+#===============================================================================
+# tinylog Unit Tests
+#===============================================================================
 if(OPT_CREATE_TESTS)
   add_executable(test_tinylog
     ${CMAKE_SOURCE_DIR}/libs/tinylog/tests/test_tinylog.cpp

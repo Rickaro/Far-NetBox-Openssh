@@ -305,6 +305,7 @@ private:
   UnicodeString FHostKey;
   bool FFingerprintScan{false};
   bool FOverrideCachedHostKey{false};
+  bool FFromOpenSshConfig{false};
   UnicodeString FNote;
   UnicodeString FWinTitle;
   RawByteString FEncryptKey;
@@ -407,6 +408,8 @@ public:
   void SetProtocolFeatures(const UnicodeString & AValue);
   void SetSshSimple(bool AValue);
   bool GetUsesSsh() const;
+  bool GetFromOpenSshConfig() const { return FFromOpenSshConfig; }
+  void SetFromOpenSshConfig(bool AValue) { FFromOpenSshConfig = AValue; }
   void SetCipherList(const UnicodeString & AValue);
   UnicodeString GetCipherList() const;
   void SetKexList(const UnicodeString & AValue);

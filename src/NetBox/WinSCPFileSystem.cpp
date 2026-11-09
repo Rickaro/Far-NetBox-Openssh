@@ -23,6 +23,7 @@
 #include <SessionHistory.h>
 
 #include "PuttyIntf.h"
+#include "OpenSshConfig.h"
 #include "XmlStorage.h"
 #include <plugin.hpp>
 #include <LogContext.h>
@@ -538,6 +539,54 @@ void TWinSCPFileSystem::GetOpenPanelInfoEx(OPENPANELINFO_FLAGS & Flags,
   }
 }
 
+void TWinSCPFileSystem::LoadOpenSshSessions()
+{
+  if (FOpenSshSessionsLoaded)
+  {
+    return;
+  }
+  FOpenSshSessionsLoaded = true;
+
+  const UnicodeString ConfigPath = OpenSsh::TConfigReader::GetDefaultConfigPath();
+  if (ConfigPath.IsEmpty())
+  {
+    return;
+  }
+
+  try
+  {
+    OpenSsh::TConfigReader Reader(
+      ConfigPath, OpenSsh::TConfigReader::GetDefaultIncludeBaseDir());
+    Reader.Read();
+
+    for (const OpenSsh::THostEntry & Entry : Reader.GetHosts())
+    {
+      const UnicodeString Name = Entry.Folder.IsEmpty() ?
+        Entry.Host : Entry.Folder + UnicodeString(L"/") + Entry.Host;
+      if (GetStoredSessions()->FindByName(Name) != nullptr)
+      {
+        continue;
+      }
+
+      std::unique_ptr<TSessionData> Data = std::make_unique<TSessionData>(Name);
+      Data->SetHostName(Entry.Host);
+      Data->SetFSProtocol(fsSFTP);
+      Data->SetFromOpenSshConfig(true);
+      Data->SetNote(FORMAT("OpenSSH config: %s:%d", Entry.SourceFile, Entry.Line));
+      FOpenSshSessions.push_back(std::move(Data));
+    }
+
+    for (const UnicodeString & Warning : Reader.GetWarnings())
+    {
+      LogEvent(FORMAT("OpenSSH config: %s", Warning));
+    }
+  }
+  catch (Exception & E)
+  {
+    LogEvent(FORMAT("OpenSSH config: %s", E.Message));
+  }
+}
+
 bool TWinSCPFileSystem::GetFindDataEx(TObjectList * PanelItems, OPERATION_MODES OpMode)
 {
   bool Result;
@@ -614,10 +663,10 @@ bool TWinSCPFileSystem::GetFindDataEx(TObjectList * PanelItems, OPERATION_MODES 
 
     std::unique_ptr<TStringList> ChildPaths(std::make_unique<TStringList>());
     ChildPaths->SetCaseSensitive(false);
-    for (int32_t Index = 0; Index < GetStoredSessions()->GetCount(); ++Index)
+
+    auto AddSessionToPanel = [&](const TSessionData * Data)
     {
-      const TSessionData * Data = GetStoredSessions()->GetSession(Index);
-      UnicodeString SessionName = Data->GetName();
+      const UnicodeString SessionName = Data->GetName();
       if (SessionName.SubString(1, Folder.Length()) == Folder)
       {
         UnicodeString Name = SessionName.SubString(
@@ -636,6 +685,17 @@ bool TWinSCPFileSystem::GetFindDataEx(TObjectList * PanelItems, OPERATION_MODES 
           PanelItems->Add(new TSessionPanelItem(Data));
         }
       }
+    };
+
+    for (int32_t Index = 0; Index < GetStoredSessions()->GetCount(); ++Index)
+    {
+      AddSessionToPanel(GetStoredSessions()->GetSession(Index));
+    }
+
+    LoadOpenSshSessions();
+    for (const std::unique_ptr<TSessionData> & Data : FOpenSshSessions)
+    {
+      AddSessionToPanel(Data.get());
     }
 
     if (!FNewSessionsFolder.IsEmpty())
@@ -685,6 +745,11 @@ void TWinSCPFileSystem::DuplicateOrRenameSession(TSessionData * Data,
   bool Duplicate)
 {
   DebugAssert(Data);
+  if (Data->GetFromOpenSshConfig())
+  {
+    MoreMessageDialog(GetMsg(NB_OPENSSH_CONFIG_SESSION_READONLY), nullptr, qtInformation, qaOK);
+    return;
+  }
   UnicodeString Name = Data->GetName();
   if (GetWinSCPPlugin()->InputBox(GetMsg(Duplicate ? NB_DUPLICATE_SESSION_TITLE : NB_RENAME_SESSION_TITLE),
       GetMsg(Duplicate ? NB_DUPLICATE_SESSION_PROMPT : NB_RENAME_SESSION_PROMPT),
@@ -737,6 +802,11 @@ void TWinSCPFileSystem::FocusSession(const TSessionData * Data)
 
 void TWinSCPFileSystem::EditConnectSession(TSessionData * Data, bool Edit)
 {
+  if (Edit && (Data != nullptr) && Data->GetFromOpenSshConfig())
+  {
+    MoreMessageDialog(GetMsg(NB_OPENSSH_CONFIG_SESSION_READONLY), nullptr, qtInformation, qaOK);
+    return;
+  }
   const bool NewData = !Data;
   const bool FillInConnect = !Edit && Data && !Data->GetCanLogin();
   if (NewData)
@@ -2960,6 +3030,10 @@ int32_t TWinSCPFileSystem::MakeDirectoryEx(UnicodeString & AName, OPERATION_MODE
 
 void TWinSCPFileSystem::DeleteSession(TSessionData * Data, void * /*AParam*/)
 {
+  if (Data->GetFromOpenSshConfig())
+  {
+    return;
+  }
   Data->Remove();
   GetStoredSessions()->Remove(Data);
 }

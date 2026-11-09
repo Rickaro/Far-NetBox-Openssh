@@ -3,6 +3,8 @@
 
 #include <UnicodeString.hpp>
 
+#include <cstdint>
+#include <string>
 #include <vector>
 
 namespace OpenSsh

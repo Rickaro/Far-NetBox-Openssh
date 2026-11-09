@@ -1466,4 +1466,6 @@ enum MsgIDs {
     NB_EDIT_NEW_FILE_TITLE,  // "Edit Remote File"
     NB_EDIT_NEW_FILE_PROMPT,  // "Enter remote &file name:"
     NB_CONFIRM_DISCONNECT_FROM_ROOT,  // "You are at the root remote directory. Disconnect from the server?"
+
+    NB_OPENSSH_CONFIG_SESSION_READONLY,  // "This session comes from the OpenSSH configuration file. Edit ~/.ssh/config instead."
 };

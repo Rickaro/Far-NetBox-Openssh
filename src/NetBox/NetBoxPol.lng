@@ -1464,3 +1464,4 @@
 "Edycja zdalnego pliku"
 "Wprowadź nazwę zdalnego &pliku:"
 "You are at the root remote directory. Disconnect from the server?"
+"Ta sesja pochodzi z pliku konfiguracji OpenSSH i jest tylko do odczytu. Zmień ~/.ssh/config."

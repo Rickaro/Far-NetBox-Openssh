@@ -1464,3 +1464,4 @@
 "Редактирование удалённого файла"
 "Введите имя удалённого &файла:"
 "You are at the root remote directory. Disconnect from the server?"
+"Эта сессия получена из конфигурации OpenSSH и доступна только для чтения. Измените ~/.ssh/config."

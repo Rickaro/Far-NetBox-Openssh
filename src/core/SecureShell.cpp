@@ -8,6 +8,8 @@
 #include <Exceptions.h>
 #include "Interface.h"
 #include "SecureShell.h"
+#include "OpenSshCommand.h"
+#include "OpenSshProcess.h"
 #include "TextsCore.h"
 #include "HelpCore.h"
 #include "CoreMain.h"
@@ -136,6 +138,20 @@ TSecureShell::~TSecureShell() noexcept
 }
 void TSecureShell::ResetConnection()
 {
+  if (FOpenSshProcess != nullptr)
+  {
+    FOpenSshProcess->Close();
+    FOpenSshProcess.reset();
+  }
+  if (FOpenSshMode)
+  {
+    FActive = false;
+    FOpened = false;
+  }
+  FOpenSshMode = false;
+  FOpenSshPumpDepth = 0;
+  FOpenSshStderr.clear();
+
   FreeBackend();
   ClearStdError();
   PendLen = 0;
@@ -176,6 +192,11 @@ void TSecureShell::ResetSessionInfo()
 
 void TSecureShell::UpdateSessionInfo() const
 {
+  if (FOpenSshMode)
+  {
+    FSessionInfoValid = true;
+    return;
+  }
   if (!FSessionInfoValid)
   {
     DebugAssert(get_ssh_version(FBackendHandle) == 2);
@@ -485,6 +506,13 @@ void TSecureShell::Open()
 
   FAuthenticationLog.Clear();
   FNoConnectionResponse = false;
+
+  if (OpenSsh::CanUseOpenSsh(FSessionData))
+  {
+    OpenOpenSsh();
+    return;
+  }
+
   FUI->Information(LoadStr(STATUS_LOOKUPHOST));
 
   try
@@ -607,6 +635,210 @@ void TSecureShell::Open()
   {
     FSshImplementation = sshiUnknown;
   }
+}
+
+void TSecureShell::OpenOpenSsh()
+{
+  FOpenSshMode = true;
+  FOpenSshStderr.clear();
+  FOpenSshProcess = std::make_unique<OpenSsh::TProcess>();
+
+  const bool Scp = (FSessionData->GetFSProtocol() == fsSCPonly);
+  const std::vector<UnicodeString> Arguments = OpenSsh::BuildSshArguments(FSessionData, Scp);
+
+  UnicodeString CommandLine = L"ssh.exe";
+  for (const UnicodeString & Argument : Arguments)
+  {
+    CommandLine += L" " + Argument;
+  }
+  LogEvent(FORMAT("Starting OpenSSH client: %s", CommandLine));
+
+  FUI->Information(LoadStr(STATUS_CONNECT));
+  FUI->Information(LoadStr(STATUS_AUTHENTICATE));
+
+  UnicodeString Error;
+  if (!FOpenSshProcess->Start(Arguments, FSessionData->GetPassword(), Error))
+  {
+    FOpenSshProcess.reset();
+    FOpenSshMode = false;
+    throw Exception(Error);
+  }
+
+  FInteractive = false;
+  FTerminalWidth = FSessionData->GetTerminalWidth();
+  FTerminalHeight = FSessionData->GetTerminalHeight();
+  FTerminalType = FSessionData->GetTerminalType();
+  FUserName = FSessionData->GetUserName();
+
+  FSessionInfoValid = true;
+  FSessionInfo.ProtocolBaseName = L"SSH";
+  FSessionInfo.ProtocolName = L"SSH-2";
+  FSessionInfo.SecurityProtocolName = L"SSH-2";
+  FSessionInfo.SshVersionString = L"OpenSSH";
+  FSessionInfo.SshImplementation = L"OpenSSH";
+  FSessionInfo.HostKeyFingerprintSHA256.Clear();
+  FSessionInfo.HostKeyFingerprintMD5.Clear();
+  FSessionInfo.LoginTime = Now();
+  FSshImplementation = sshiOpenSSH;
+
+  FActive = true;
+  FOpened = true;
+  FAuthenticating = false;
+  FAuthenticated = true;
+  FLastDataSent = Now();
+  FUI->Information(LoadStr(STATUS_AUTHENTICATED));
+
+  // Surface immediate failures (bad arguments, unresolvable alias) before the
+  // caller starts the SFTP/SCP conversation.
+  PumpOpenSsh();
+  CheckOpenSshConnection();
+}
+
+void TSecureShell::PumpOpenSsh()
+{
+  if (FOpenSshProcess == nullptr)
+  {
+    return;
+  }
+
+  std::vector<uint8_t> Stdout;
+  std::string Stderr;
+  ++FOpenSshPumpDepth;
+  try
+  {
+    FOpenSshProcess->Pump(Stdout, Stderr);
+    if (!Stdout.empty())
+    {
+      FromBackend(Stdout.data(), Stdout.size());
+    }
+    if (!Stderr.empty())
+    {
+      FOpenSshStderr.append(Stderr);
+      constexpr size_t MaxStderr = 64 * 1024;
+      if (FOpenSshStderr.size() > MaxStderr)
+      {
+        FOpenSshStderr.erase(0, FOpenSshStderr.size() - MaxStderr);
+      }
+      AddStdError(reinterpret_cast<const uint8_t *>(Stderr.data()), Stderr.size());
+    }
+  }
+  catch (...)
+  {
+    --FOpenSshPumpDepth;
+    throw;
+  }
+  --FOpenSshPumpDepth;
+}
+
+void TSecureShell::CheckOpenSshConnection(int32_t Message)
+{
+  if ((FOpenSshPumpDepth > 0) || FClosed)
+  {
+    return;
+  }
+  if (PendLen > 0)
+  {
+    return;
+  }
+  if ((FOpenSshProcess != nullptr) && FOpenSshProcess->IsRunning())
+  {
+    return;
+  }
+
+  uint32_t ExitCode = 0;
+  const bool HasExitCode = (FOpenSshProcess != nullptr) && FOpenSshProcess->GetExitCode(ExitCode);
+
+  UnicodeString Str;
+  if (!FOpenSshStderr.empty())
+  {
+    Str = UnicodeString(UTF8String(FOpenSshStderr.c_str()));
+  }
+  if (Str.Trim().IsEmpty())
+  {
+    Str = LoadStr(Message >= 0 ? Message : NOT_CONNECTED);
+  }
+  if (HasExitCode)
+  {
+    Str += L" " + FMTLOAD(SSH_EXITCODE, nb::ToInt32(ExitCode));
+  }
+
+  FActive = false;
+  FatalError(Str, Message >= 0 ? UnicodeString() : UnicodeString(HELP_NOT_CONNECTED));
+}
+
+void TSecureShell::PoolOpenSshForData(uint32_t & Result)
+{
+  if (!GetActive())
+  {
+    Result = qaRetry;
+    return;
+  }
+
+  PumpOpenSsh();
+  if ((PendLen > 0) ||
+      ((FOpenSshProcess != nullptr) && (!FOpenSshProcess->IsRunning() || FOpenSshProcess->HasOutput())))
+  {
+    Result = qaOK;
+  }
+  else
+  {
+    Result = qaRetry;
+  }
+}
+
+void TSecureShell::WaitForOpenSshData()
+{
+  const int32_t TimeoutSeconds = FSessionData->GetTimeout();
+  const bool InfiniteWait = (TimeoutSeconds == 0);
+  const uint64_t TimeoutValue = static_cast<uint64_t>(TimeoutSeconds) * 1000;
+  const uint32_t Timeout = InfiniteWait ? 0 :
+    static_cast<uint32_t>(TimeoutValue > 0xFFFFFFFF ? 0xFFFFFFFF : TimeoutValue);
+  uint32_t Elapsed = 0;
+
+  for (;;)
+  {
+    if (PendLen > 0)
+    {
+      return;
+    }
+
+    PumpOpenSsh();
+    if (PendLen > 0)
+    {
+      return;
+    }
+    if ((FOpenSshProcess == nullptr) || !FOpenSshProcess->IsRunning())
+    {
+      CheckOpenSshConnection();
+    }
+
+    if (!InfiniteWait && (Elapsed >= Timeout))
+    {
+      Elapsed = 0;
+      const uint32_t Answer = TimeoutPrompt(nb::bind(&TSecureShell::PoolOpenSshForData, this));
+      if (Answer == qaOK)
+      {
+        continue;
+      }
+    }
+
+    constexpr uint32_t Step = 10;
+    ::Sleep(Step);
+    FUI->ProcessGUI();
+    Elapsed += Step;
+  }
+}
+
+void TSecureShell::CloseOpenSsh()
+{
+  LogEvent("Closing OpenSSH connection.");
+  FClosed = true;
+  if (FOpenSshProcess != nullptr)
+  {
+    FOpenSshProcess->Close();
+    FOpenSshProcess.reset();
+  }
+  Discard();
 }
 
 bool TSecureShell::TryFtp()
@@ -1592,6 +1824,28 @@ void TSecureShell::DispatchSendBuffer(int32_t BufSize)
 void TSecureShell::Send(const uint8_t * Buf, size_t Length)
 {
   CheckConnection();
+
+  if (FOpenSshMode)
+  {
+    if (FOpenSshProcess == nullptr)
+    {
+      CheckOpenSshConnection();
+      return;
+    }
+    UnicodeString Error;
+    if (!FOpenSshProcess->Write(Buf, Length, Error))
+    {
+      const UTF8String Utf8(Error);
+      FOpenSshStderr.append(Utf8.c_str(), static_cast<size_t>(Utf8.GetLength()));
+      CheckOpenSshConnection();
+      return;
+    }
+    FLastDataSent = Now();
+    PumpOpenSsh();
+    CheckOpenSshConnection();
+    return;
+  }
+
   backend_send(FBackendHandle, const_cast<char *>(reinterpret_cast<const char *>(Buf)), Length);
   const size_t BufSize = backend_sendbuffer(FBackendHandle);
   if (GetConfiguration()->GetActualLogProtocol() >= 1)
@@ -2037,6 +2291,13 @@ void TSecureShell::Discard()
 void TSecureShell::Close()
 {
   LogEvent("Closing connection.");
+
+  if (FOpenSshMode)
+  {
+    CloseOpenSsh();
+    return;
+  }
+
   DebugAssert(FActive);
   FClosed = true;
 
@@ -2075,6 +2336,12 @@ void TSecureShell::Close()
 
 void TSecureShell::CheckConnection(int32_t Message)
 {
+  if (FOpenSshMode)
+  {
+    CheckOpenSshConnection(Message);
+    return;
+  }
+
   if (!FActive || (backend_exitcode(FBackendHandle) >= 0))
   {
     UnicodeString Str;
@@ -2187,6 +2454,12 @@ private:
 
 void TSecureShell::WaitForData()
 {
+  if (FOpenSshMode)
+  {
+    WaitForOpenSshData();
+    return;
+  }
+
   // see winsftp.c
   bool IncomingData;
   const bool InfiniteWait = FSessionData->GetTimeout() == 0;
@@ -2243,6 +2516,10 @@ void TSecureShell::WaitForData()
 
 bool TSecureShell::SshFallbackCmd() const
 {
+  if (FOpenSshMode)
+  {
+    return false;
+  }
   return ssh_fallback_cmd(FBackendHandle) != 0;
 }
 
@@ -2505,6 +2782,17 @@ bool TSecureShell::EventSelectLoop(uint32_t MSec, bool ReadEventRequired,
 
 void TSecureShell::Idle(uint32_t MSec)
 {
+  if (FOpenSshMode)
+  {
+    if (MSec > 0)
+    {
+      ::Sleep(MSec);
+    }
+    PumpOpenSsh();
+    FUI->ProcessGUI();
+    return;
+  }
+
   noise_regular();
 
   winscp_query(FBackendHandle, WINSCP_QUERY_TIMER);
@@ -2519,6 +2807,13 @@ void TSecureShell::Idle(uint32_t MSec)
 
 void TSecureShell::KeepAlive()
 {
+  if (FOpenSshMode)
+  {
+    // Connection keep-alive is delegated to OpenSSH (ServerAliveInterval).
+    FLastDataSent = Now();
+    return;
+  }
+
   if (FActive && (FWaiting == 0))
   {
     LogEvent("Sending null packet to keep session alive.");
@@ -2533,6 +2828,11 @@ void TSecureShell::KeepAlive()
 
 uint32_t TSecureShell::MaxPacketSize() const
 {
+  if (FOpenSshMode)
+  {
+    return 32 * 1024;
+  }
+
   if (!FSessionInfoValid)
   {
     UpdateSessionInfo();
@@ -3248,6 +3548,10 @@ bool TSecureShell::GetStoredCredentialsTried() const
 
 bool TSecureShell::GetReady() const
 {
+  if (FOpenSshMode)
+  {
+    return (PendLen > 0) || ((FOpenSshProcess != nullptr) && FOpenSshProcess->HasOutput());
+  }
   return FOpened && (FWaiting == 0);
 }
 
