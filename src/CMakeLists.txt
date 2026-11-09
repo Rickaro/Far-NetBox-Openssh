@@ -202,6 +202,7 @@ endif()
 if(OPT_CREATE_OPENSSH_TESTS)
   add_executable(test_openssh_config
     ${CMAKE_SOURCE_DIR}/tests/core/test_openssh_config.cpp
+    ${CMAKE_SOURCE_DIR}/tests/core/TestSysutils.cpp
     ${CMAKE_SOURCE_DIR}/src/core/OpenSshConfig.cpp
     ${CMAKE_SOURCE_DIR}/src/core/OpenSshProcess.cpp
     ${CMAKE_SOURCE_DIR}/src/base/UnicodeString.cpp
