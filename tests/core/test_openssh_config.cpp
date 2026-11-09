@@ -6,7 +6,31 @@
 #include <vector>
 
 #include <Sysutils.hpp>
+#include <ObjIDs.h>
 #include <OpenSshConfig.h>
+#include <OpenSshProcess.h>
+
+// Minimal Exception implementation for the standalone parser test. The full
+// implementation lives in Sysutils.cpp and drags the whole core into the test.
+Exception::Exception(TObjectClassId Kind, const wchar_t * Msg) noexcept :
+  FKind(Kind), Message(Msg)
+{
+}
+
+Exception::Exception(const wchar_t * Msg) noexcept :
+  Exception(OBJECT_CLASS_Exception, Msg)
+{
+}
+
+Exception::Exception(TObjectClassId Kind, const UnicodeString & Msg) noexcept :
+  FKind(Kind), Message(Msg)
+{
+}
+
+Exception::Exception(const UnicodeString & Msg) noexcept :
+  Exception(OBJECT_CLASS_Exception, Msg)
+{
+}
 
 #define CHECK(CONDITION) \
   do \
@@ -192,6 +216,38 @@ int main()
     }
     CHECK(Thrown);
     std::cout << "PASS: missing config" << std::endl;
+  }
+
+  // --- ssh.exe transport smoke test ---
+  {
+    if (!OpenSsh::TProcess::IsAvailable())
+    {
+      std::cout << "SKIP: ssh.exe not available" << std::endl;
+    }
+    else
+    {
+      OpenSsh::TProcess Process;
+      UnicodeString Error;
+      std::vector<UnicodeString> Arguments;
+      Arguments.push_back(L"-V");
+      CHECK(Process.Start(Arguments, UnicodeString(), Error));
+
+      std::vector<uint8_t> Stdout;
+      std::string Stderr;
+      for (int32_t Attempt = 0; Attempt < 100; ++Attempt)
+      {
+        Process.Pump(Stdout, Stderr);
+        if (Process.HasExited())
+        {
+          break;
+        }
+        ::Sleep(50);
+      }
+      Process.Pump(Stdout, Stderr);
+      CHECK(Stderr.find("OpenSSH") != std::string::npos);
+      Process.Close();
+      std::cout << "PASS: ssh.exe transport" << std::endl;
+    }
   }
 
   std::cout << "All OpenSSH config tests passed." << std::endl;

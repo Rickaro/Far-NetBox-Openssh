@@ -203,12 +203,9 @@ if(OPT_CREATE_OPENSSH_TESTS)
   add_executable(test_openssh_config
     ${CMAKE_SOURCE_DIR}/tests/core/test_openssh_config.cpp
     ${CMAKE_SOURCE_DIR}/src/core/OpenSshConfig.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/OpenSshProcess.cpp
     ${CMAKE_SOURCE_DIR}/src/base/UnicodeString.cpp
-    ${CMAKE_SOURCE_DIR}/src/base/Classes.cpp
-    ${CMAKE_SOURCE_DIR}/src/base/Sysutils.cpp
-    ${CMAKE_SOURCE_DIR}/src/base/StrUtils.cpp
-    ${CMAKE_SOURCE_DIR}/src/base/WideStrUtils.cpp
-    ${CMAKE_SOURCE_DIR}/src/base/Common.cpp
+    ${CMAKE_SOURCE_DIR}/src/base/ObjIDs.cpp
     ${CMAKE_SOURCE_DIR}/src/nbcore/nbmemory.cpp
     ${CMAKE_SOURCE_DIR}/src/nbcore/nbstring.cpp
     ${CMAKE_SOURCE_DIR}/src/nbcore/nbutils.cpp

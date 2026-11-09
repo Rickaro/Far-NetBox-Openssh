@@ -19,6 +19,7 @@ namespace OpenSsh
 namespace
 {
 constexpr DWORD ReadChunkLimit = 256 * 1024;
+constexpr DWORD PipeBufferSize = 1024 * 1024;
 
 std::wstring ToWide(const UnicodeString & Value)
 {
@@ -269,10 +270,14 @@ bool TProcess::Start(const std::vector<UnicodeString> & Arguments,
     // Older OpenSSH releases only use SSH_ASKPASS when DISPLAY is set.
     EnvironmentOverrides.emplace_back(L"DISPLAY", L"NetBox");
   }
-  if (!Password.IsEmpty())
+  else
   {
-    EnvironmentOverrides.emplace_back(L"NETBOX_ASKPASS_PASSWORD", ToWide(Password));
+    // Do not let an inherited helper interfere when the plugin has none.
+    EnvironmentOverrides.emplace_back(L"SSH_ASKPASS", L"");
+    EnvironmentOverrides.emplace_back(L"SSH_ASKPASS_REQUIRE", L"never");
   }
+  // Always override: an inherited value must never authenticate a session.
+  EnvironmentOverrides.emplace_back(L"NETBOX_ASKPASS_PASSWORD", ToWide(Password));
   const std::vector<wchar_t> Environment = BuildEnvironment(EnvironmentOverrides);
 
   SECURITY_ATTRIBUTES SecurityAttributes{};
@@ -287,9 +292,9 @@ bool TProcess::Start(const std::vector<UnicodeString> & Arguments,
   HANDLE StderrWrite = nullptr;
 
   bool Created = true;
-  Created = Created && ::CreatePipe(&StdinRead, &StdinWrite, &SecurityAttributes, 0);
-  Created = Created && ::CreatePipe(&StdoutRead, &StdoutWrite, &SecurityAttributes, 0);
-  Created = Created && ::CreatePipe(&StderrRead, &StderrWrite, &SecurityAttributes, 0);
+  Created = Created && ::CreatePipe(&StdinRead, &StdinWrite, &SecurityAttributes, PipeBufferSize);
+  Created = Created && ::CreatePipe(&StdoutRead, &StdoutWrite, &SecurityAttributes, PipeBufferSize);
+  Created = Created && ::CreatePipe(&StderrRead, &StderrWrite, &SecurityAttributes, PipeBufferSize);
   if (!Created)
   {
     Error = FromWide(FormatErrorMessage(::GetLastError()));
