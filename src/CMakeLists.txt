@@ -118,18 +118,20 @@ endif()
 # tinylog Unit Tests
 #===============================================================================
 if(OPT_CREATE_TESTS)
-  add_executable(test_tinylog
-    ${CMAKE_SOURCE_DIR}/libs/tinylog/tests/test_tinylog.cpp
-    ${CMAKE_SOURCE_DIR}/src/nbcore/nbmemory.cpp
-    ${CMAKE_SOURCE_DIR}/src/nbcore/nbstring.cpp
-    ${CMAKE_SOURCE_DIR}/libs/tinylog/src/TinyLog.cpp
-    ${CMAKE_SOURCE_DIR}/libs/tinylog/src/LogStream.cpp
-    ${CMAKE_SOURCE_DIR}/libs/tinylog/src/Buffer.cpp
-    ${CMAKE_SOURCE_DIR}/libs/tinylog/src/Utils.cpp
-  )
-  netbox_configure_target(test_tinylog)
-  target_compile_definitions(test_tinylog PRIVATE -DTINYLOG_EXPOR)
-  add_test(NAME tinylog COMMAND test_tinylog)
+  if(EXISTS ${CMAKE_SOURCE_DIR}/libs/tinylog/tests/test_tinylog.cpp)
+    add_executable(test_tinylog
+      ${CMAKE_SOURCE_DIR}/libs/tinylog/tests/test_tinylog.cpp
+      ${CMAKE_SOURCE_DIR}/src/nbcore/nbmemory.cpp
+      ${CMAKE_SOURCE_DIR}/src/nbcore/nbstring.cpp
+      ${CMAKE_SOURCE_DIR}/libs/tinylog/src/TinyLog.cpp
+      ${CMAKE_SOURCE_DIR}/libs/tinylog/src/LogStream.cpp
+      ${CMAKE_SOURCE_DIR}/libs/tinylog/src/Buffer.cpp
+      ${CMAKE_SOURCE_DIR}/libs/tinylog/src/Utils.cpp
+    )
+    netbox_configure_target(test_tinylog)
+    target_compile_definitions(test_tinylog PRIVATE -DTINYLOG_EXPOR)
+    add_test(NAME tinylog COMMAND test_tinylog)
+  endif()
   add_executable(test_sessionhistory
     ${CMAKE_SOURCE_DIR}/tests/nbcore/SessionHistoryTest.cpp
     ${CMAKE_SOURCE_DIR}/src/nbcore/SessionHistory.cpp
