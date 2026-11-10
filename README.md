@@ -47,14 +47,43 @@ Open the plugin commands menu with **`Alt+Shift+W`**, then choose
   means automatic search; the dialog shows the standard Windows path when it
   exists.
 - **OpenSSH agent (`ssh-agent.exe`)** — path to the agent used for key
-  authentication. When no agent is running, the plugin starts this one and
-  passes `SSH_AUTH_SOCK`/`SSH_AGENT_PID` to ssh; keys decrypted once are cached
-  in the agent for the rest of the Far session (`AddKeysToAgent=yes`).
+  authentication. See [SSH agent](#ssh-agent) below.
 - Putty/Pageant/PuTTYgen paths — used only by the PuTTY backend.
 
 All paths are stored in the SshBox configuration and take precedence over
 environment variables. The client path must point to `ssh.exe` (not
 `scp.exe`); a directory containing `ssh.exe` is also accepted.
+
+### SSH agent
+
+The plugin picks the first agent that is available:
+
+1. an inherited `SSH_AUTH_SOCK` in the Far environment;
+2. the running Windows agent pipe `\\.\pipe\openssh-ssh-agent`;
+3. an agent started by the plugin from the configured `ssh-agent.exe`.
+
+When no agent is running, the plugin starts the configured binary, reads
+`SSH_AUTH_SOCK`/`SSH_AGENT_PID` from its output and passes them to every `ssh`
+it launches. ssh is then started with `-o AddKeysToAgent=yes`, so a key is
+decrypted once and stays in the agent for the rest of the Far session — later
+connections do not ask for the passphrase again. The agent started by the
+plugin is stopped when Far exits.
+
+Windows' own `C:\Windows\System32\OpenSSH\ssh-agent.exe` is a **service**
+binary: started directly it fails with error 1058 unless the service is
+enabled. The plugin treats this as "no agent" — it logs the reason and keeps
+working, and ssh asks for the passphrase through the Far askpass dialog. To get
+a working agent, either enable the service:
+
+```powershell
+Set-Service ssh-agent -StartupType Automatic
+Start-Service ssh-agent
+ssh-add $env:USERPROFILE\.ssh\id_ed25519
+```
+
+or point the setting to an MSYS/Git `ssh-agent.exe`, which runs in the
+foreground and prints its environment block (for example
+`C:\Program Files\Git\usr\bin\ssh-agent.exe`).
 
 ### Environment variables
 
