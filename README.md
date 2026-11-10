@@ -1,13 +1,38 @@
-# SshBox
+# SshBox — Far-NetBox OpenSSH fork
 
 > SFTP/SCP client plugin for Far Manager 3.0 using the system OpenSSH client
 
-SshBox is a fork of Far-NetBox focused on native OpenSSH. It reads
-`~/.ssh/config` (including `Include`, `Match` and `ProxyJump`), uses OpenSSH
-keys and ssh-agent, and can be installed next to the original NetBox plugin.
+**Plugin version:** 0.1.0
+**Based on:** Far-NetBox **26.7.3.617** ([michaellukashov/Far-NetBox](https://github.com/michaellukashov/Far-NetBox))
+
+SshBox is an AI-assisted fork of Far-NetBox focused on native OpenSSH. It uses
+`ssh.exe` and `ssh-agent` as the transport instead of the bundled PuTTY engine,
+reads `~/.ssh/config` (including `Include`, `Match` and `ProxyJump`), and can be
+installed next to the original NetBox plugin.
 
 The plugin is built as `SshBox.dll` and installed into `Plugins\SshBox`, so it
 does not replace or conflict with `Plugins\NetBox`.
+
+## Features
+
+- **Flexible SSH client support** — the built-in Windows OpenSSH client or a
+  custom `ssh.exe` (for example the one shipped with Git for Windows).
+- **Robust SSH config support** — `~/.ssh/config`, `ProxyJump`, key-based
+  authentication and partial configurations through `Include`.
+- **Jump host connectivity** — connect any host through a jump host with
+  `Ctrl+Shift+J`, without adding `host-via-jump` entries to the configuration.
+- **Coexistence** — runs alongside the original Far-NetBox plugin without
+  conflicts (own DLL, plugin directory, command prefix and configuration key).
+- **Far-native prompts** — password, key passphrase and host-key prompts are
+  shown by Far itself through a per-session named-pipe bridge.
+- **PuTTY fallback** — PuTTY remains available for `.ppk` keys, SOCKS/HTTP
+  proxies and interactive terminal sessions.
+- **Multi-architecture** — x86, x64 and ARM64 builds.
+
+## Disclaimer
+
+**NOTE:** This is an AI-generated codebase. Please review the code and use it at
+your own risk.
 
 ## Quick Start
 
@@ -20,18 +45,6 @@ Far3_x64\Far.exe
 
 :: Press F11 and select SshBox
 ```
-
-## Key Features
-
-- **Native OpenSSH** — SFTP/SCP through `ssh.exe`, with `~/.ssh/config`,
-  `Include`, `ProxyJump`, key authentication and ssh-agent
-- **Hosts from config** — `~/.ssh/config` hosts appear in the session panel;
-  `Include` files are shown as folders
-- **Far dialogs** — password, key passphrase and host-key prompts are shown by
-  Far itself through a per-session named-pipe bridge
-- **Fallback** — PuTTY remains available for `.ppk` keys, SOCKS/HTTP proxies
-  and interactive terminal sessions
-- **Multi-architecture** — x86, x64, and ARM64 builds
 
 ## OpenSSH settings
 
@@ -166,15 +179,40 @@ The dialog shows the actual expanded path. For key-authentication problems,
 enable `SSHBOX_SSH_VERBOSE=1` and look for `identity file`, `Will attempt key`,
 `Trying private key` and `Authenticated ... using "publickey"`.
 
+## Upstream Far-NetBox
+
+The original plugin is a file transfer plugin for
+[Far Manager](https://www.farmanager.com/) supporting multiple network
+protocols. Built on proven codebases — WinSCP 6.5.6, PuTTY 0.81 and FileZilla
+2.2.32 — it delivers reliable remote file management inside Far's text-mode
+interface.
+
+Upstream features kept in SshBox:
+
+- **SFTP/SCP** — SSH file transfers (in SshBox via OpenSSH)
+- **FTP/FTPS** — File Transfer Protocol with TLS via FileZilla
+- **WebDAV/HTTPS** — Web-based distributed authoring via neon
+- **Amazon S3** — S3-compatible storage with TLS and custom CA certificates
+- **Session management** — XML-based configuration with password encryption
+- **Multi-architecture** — x86, x64 and ARM64 builds
+
 ## Documentation
 
 | Guide | Description |
 |-------|-------------|
 | [Getting Started](docs/getting-started.md) | Build, install, and first connection |
 | [Native OpenSSH](docs/openssh.md) | OpenSSH backend, `~/.ssh/config` hosts and limitations |
+| [User Guide](docs/user-guide.md) | Protocols, features, and internationalization |
 | [Architecture](docs/architecture.md) | Project structure, layers, and patterns |
 | [Contributing](docs/contributing.md) | Code conventions and development workflow |
 | [Testing](docs/testing.md) | Manual regression testing and verification |
+
+## Credits
+
+The original project is located at
+[michaellukashov/Far-NetBox](https://github.com/michaellukashov/Far-NetBox).
+This fork is maintained at
+[Rickaro/Far-NetBox-Openssh](https://github.com/Rickaro/Far-NetBox-Openssh).
 
 ## License
 
