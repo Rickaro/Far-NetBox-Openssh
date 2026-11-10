@@ -1,12 +1,25 @@
-# Far-NetBox
+# Far-NetBox SSH Fork (Far-SshBox)
+
+An AI-assisted fork of the popular [Far-NetBox](https://github.com/michaellukashov/Far-NetBox) plugin that uses SSH/ssh-agent as a transport mechanism instead of PuTTY.
+
+## Features
+
+- **Flexible SSH Client Support**: Allows you to use the built-in Windows OpenSSH client or a custom SSH executable (for example, the one included with Git for Windows).
+- **Robust SSH Config Support**: Tested support for `~/.ssh/config` files, `ProxyJump`, key-based authentication, and partial configurations using the `Include` directive.
+- **Jump Host Connectivity**: Added the ability to connect via a Jump Host using the `Ctrl+Shift+J` hotkey on a host record.
+- **Coexistence**: Can be used alongside the original Far-NetBox plugin without conflicts.
+
+## ⚠️ Disclaimer
+
+**NOTE:** This is an AI-generated codebase. Please review the code and use it at your own risk.
+
+## Credits
+
+The original project is located at: [michaellukashov/Far-NetBox](https://github.com/michaellukashov/Far-NetBox)
 
 > SFTP/FTP/SCP/WebDAV/S3 client plugin for Far Manager 3.0 (x86/x64/ARM64)
 
 Far-NetBox is a file transfer plugin for [Far Manager](https://www.farmanager.com/) supporting multiple network protocols. Built on proven codebases — WinSCP 6.5.6, PuTTY 0.81, and FileZilla 2.2.32 — it delivers reliable remote file management inside Far's text-mode interface.
-
-| Workflow | Build status |
-|----------|-------------|
-| GitHub Actions | [![build](https://github.com/michaellukashov/Far-NetBox/actions/workflows/release.yml/badge.svg)](https://github.com/michaellukashov/Far-NetBox/actions/workflows/release.yml) |
 
 ## Quick Start
 
