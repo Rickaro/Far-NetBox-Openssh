@@ -1466,3 +1466,8 @@
 "You are at the root remote directory. Disconnect from the server?"
 "Эта сессия получена из конфигурации OpenSSH и доступна только для чтения. Измените ~/.ssh/config."
 "Клиент OpenSSH (&ssh.exe):"
+"Клиент SSH (&M):"
+"Авто"
+"OpenSSH"
+"PuTTY"
+"Агент OpenSSH (&ssh-agent.exe):"

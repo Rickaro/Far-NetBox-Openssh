@@ -663,6 +663,10 @@ void TSecureShell::OpenOpenSsh()
   }
   LogEvent(FORMAT("OpenSSH executable: %s",
     OpenSsh::TProcess::FindSshExecutable(FConfiguration->GetSshPath())));
+  LogEvent(FORMAT("OpenSSH agent: %s",
+    OpenSsh::TProcess::HasSshAgent()
+      ? OpenSsh::TProcess::SshAgentSocket()
+      : UnicodeString(L"not available")));
   LogEvent(FORMAT("Starting OpenSSH client: %s", CommandLine));
 
   FUI->Information(LoadStr(STATUS_CONNECT));
@@ -671,7 +675,7 @@ void TSecureShell::OpenOpenSsh()
   UnicodeString Error;
   if (!FOpenSshProcess->Start(Arguments, FSessionData->GetPassword(),
     FSessionData->GetPassphrase(), FConfiguration->GetSshPath(),
-    FAskpassPipeName, FAskpassToken, Error))
+    FConfiguration->GetSshAgentPath(), FAskpassPipeName, FAskpassToken, Error))
   {
     StopOpenSshAskpass();
     FOpenSshProcess.reset();

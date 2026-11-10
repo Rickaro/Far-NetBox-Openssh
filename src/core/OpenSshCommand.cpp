@@ -110,24 +110,35 @@ bool CanUseOpenSsh(const TSessionData * Data)
     return false;
   }
 
-  wchar_t Override[64]{};
-  const wchar_t * const EnvironmentNames[] = { L"SSHBOX_SSH_CLIENT", L"NETBOX_SSH_CLIENT" };
-  DWORD OverrideLength = 0;
-  for (const wchar_t * Name : EnvironmentNames)
+  // Integration settings win over the environment: an explicit backend choice
+  // must never be silently overridden by an inherited variable.
+  const int32_t Mode = GetConfiguration()->GetSshClientMode();
+  if (Mode == scmPuTTY)
   {
-    OverrideLength = ::GetEnvironmentVariableW(Name, Override, static_cast<DWORD>(_countof(Override)));
-    if (OverrideLength > 0)
-    {
-      break;
-    }
+    return false;
   }
-  if ((OverrideLength > 0) && (OverrideLength < _countof(Override)))
+
+  if (Mode == scmAuto)
   {
-    if (::lstrcmpiW(Override, L"putty") == 0)
+    wchar_t Override[64]{};
+    const wchar_t * const EnvironmentNames[] = { L"SSHBOX_SSH_CLIENT", L"NETBOX_SSH_CLIENT" };
+    DWORD OverrideLength = 0;
+    for (const wchar_t * Name : EnvironmentNames)
     {
-      return false;
+      OverrideLength = ::GetEnvironmentVariableW(Name, Override, static_cast<DWORD>(_countof(Override)));
+      if (OverrideLength > 0)
+      {
+        break;
+      }
     }
-    // Any other value (including "openssh") keeps the automatic selection.
+    if ((OverrideLength > 0) && (OverrideLength < _countof(Override)))
+    {
+      if (::lstrcmpiW(Override, L"putty") == 0)
+      {
+        return false;
+      }
+      // Any other value (including "openssh") keeps the automatic selection.
+    }
   }
 
   if (!Data->GetUsesSsh() || !TProcess::IsAvailable(GetConfiguration()->GetSshPath()))
@@ -198,6 +209,15 @@ std::vector<UnicodeString> BuildSshArguments(const TSessionData * Data, bool Scp
   if (Askpass)
   {
     AddOption(Arguments, L"NumberOfPasswordPrompts", 1);
+  }
+
+  // Cache the decrypted key in the agent so that later connections in the same
+  // Far session do not ask for the passphrase again.
+  UnicodeString AgentError;
+  if (TProcess::EnsureSshAgent(GetConfiguration()->GetSshPath(),
+    GetConfiguration()->GetSshAgentPath(), AgentError))
+  {
+    AddOption(Arguments, L"AddKeysToAgent", L"yes");
   }
 
   const int32_t Timeout = Data->GetTimeout();

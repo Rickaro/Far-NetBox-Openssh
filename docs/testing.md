@@ -34,6 +34,8 @@ verified manually inside Far Manager.
 | OpenSSH key auth | Session for a `Host` with `IdentityFile` → connect | Connects with `publickey`, no password prompt |
 | Askpass bridge | Session that needs a password → connect | Far password dialog appears, no extra window |
 | SSH path setting | `Alt+Shift+W` → Integration settings → set `ssh.exe` | Path persisted; log shows the same `ssh.exe` |
+| SSH backend mode | Integration settings → SSH client: `PuTTY`, then `OpenSSH` | Connect uses the selected backend; log has no `Starting OpenSSH client` in `PuTTY` mode |
+| SSH agent | Integration settings → set `ssh-agent.exe`, connect with a passphrase key | Log shows `OpenSSH agent: ...`; second connection does not ask for the passphrase |
 | Settings entry | `Alt+Shift+W` → Integration settings, close and reopen | No crash (regression for 0xC0000005) |
 
 ### Protocol-Specific Tests

@@ -19,15 +19,46 @@ If `ssh.exe` is not found, the plugin silently keeps using the PuTTY backend.
 
 ## How sessions are selected
 
-The OpenSSH backend is used automatically for SFTP and SCP sessions when:
+The backend is chosen in **`Alt+Shift+W` → Integration settings → SSH client**:
+
+| Mode | Behaviour |
+|------|-----------|
+| `Auto` | OpenSSH when available, PuTTY otherwise |
+| `OpenSSH` | Always the external client; PuTTY is not used |
+| `PuTTY` | Never uses OpenSSH |
+
+In `Auto` the OpenSSH backend is used for SFTP and SCP sessions when:
 
 * `ssh.exe` is available;
 * the session does not request an interactive terminal, fingerprint scan,
   password-change-only mode or a SOCKS/HTTP proxy;
 * the session does not use a local proxy command that SSH cannot express.
 
-`SSHBOX_SSH_CLIENT=putty` forces the PuTTY backend for troubleshooting.
-`SSHBOX_SSH_EXE=C:\path\to\ssh.exe` overrides the client location.
+In `Auto`, `SSHBOX_SSH_CLIENT=putty` forces the PuTTY backend for
+troubleshooting. An explicit mode in Integration settings wins over that
+variable. `SSHBOX_SSH_EXE=C:\path\to\ssh.exe` overrides the client location in
+every mode.
+
+## SSH agent
+
+Integration settings also contain the path to `ssh-agent.exe`. The plugin uses
+an agent that is already running (inherited `SSH_AUTH_SOCK` or the Windows
+agent pipe `\\.\pipe\openssh-ssh-agent`). When no agent is reachable, it starts
+the configured `ssh-agent.exe` and passes `SSH_AUTH_SOCK`/`SSH_AGENT_PID` to
+ssh, then runs ssh with `AddKeysToAgent=yes`, so a passphrase is asked only once
+per Far session.
+
+Windows' own `ssh-agent.exe` is a service binary: started directly it fails
+with error 1058 unless the `ssh-agent` service is enabled. In that case the
+plugin logs the failure and continues without an agent — enable the service
+(`Set-Service ssh-agent -StartupType Automatic; Start-Service ssh-agent`) or
+point the setting to an MSYS/Git `ssh-agent.exe`, which runs in the foreground.
+The resolved agent is written to the session log:
+
+```text
+OpenSSH agent: \\.\pipe\openssh-ssh-agent
+```
+
 
 ## Host list from `~/.ssh/config`
 

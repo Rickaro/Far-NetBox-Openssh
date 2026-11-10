@@ -253,6 +253,8 @@ void TConfiguration::Default()
   FShowFtpWelcomeMessage = false;
   FExternalIpAddress.Clear();
   FSshPath.Clear();
+  FSshAgentPath.Clear();
+  FSshClientMode = 0;
   FLocalPortNumberMin = 0;
   FLocalPortNumberMax = 0;
   FTryFtpWhenSshFails = true;
@@ -427,6 +429,8 @@ UnicodeString TConfiguration::PropertyToKey(const UnicodeString & Property)
     KEY(String,   RandomSeedFile); \
     KEY(String,   PuttyRegistryStorageKey); \
     KEY(String,   SshPath); \
+    KEY(String,   SshAgentPath); \
+    KEY(Integer,  SshClientMode); \
     KEY(Bool,     ConfirmOverwriting); \
     KEY(Bool,     ConfirmResume); \
     KEY(Bool,     SilentMode); \
@@ -2164,6 +2168,16 @@ void TConfiguration::SetExternalIpAddress(const UnicodeString & Value)
 void TConfiguration::SetSshPath(const UnicodeString & Value)
 {
   SET_CONFIG_PROPERTY(SshPath);
+}
+
+void TConfiguration::SetSshAgentPath(const UnicodeString & Value)
+{
+  SET_CONFIG_PROPERTY(SshAgentPath);
+}
+
+void TConfiguration::SetSshClientMode(int32_t Value)
+{
+  SET_CONFIG_PROPERTY(SshClientMode);
 }
 
 bool TConfiguration::HasLocalPortNumberLimits() const

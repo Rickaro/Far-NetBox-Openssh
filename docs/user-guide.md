@@ -230,12 +230,23 @@ The **Generate Key** button on the Session dialog Auth tab launches PuTTYgen to 
 
 Open the plugin commands menu with **`Alt+Shift+W`** and choose
 **Integration settings**. Besides the PuTTY, Pageant and PuTTYgen paths, the
-dialog contains **OpenSSH client (`ssh.exe`)**, the full path to the OpenSSH
-client used for SFTP and SCP sessions. Leave it empty to use the automatic
-search order: `SSHBOX_SSH_EXE` (`NETBOX_SSH_EXE`), then
-`%WINDIR%\System32\OpenSSH\ssh.exe`, then `ssh.exe` from `PATH`.
+dialog contains:
 
-The path is stored in the SshBox configuration and wins over environment
+- **SSH client (mode)** — `Auto`, `OpenSSH` or `PuTTY`. `Auto` uses OpenSSH
+  when `ssh.exe` is available and falls back to PuTTY.
+- **OpenSSH client (`ssh.exe`)** — full path to the OpenSSH client used for
+  SFTP and SCP sessions. Empty means automatic search; the field is prefilled
+  with the standard Windows path when it exists.
+- **OpenSSH agent (`ssh-agent.exe`)** — agent used for key authentication. When
+  no agent is running, the plugin starts this one and caches decrypted keys in
+  it for the rest of the Far session.
+
+The automatic search order for the client is `SSHBOX_SSH_EXE`
+(`NETBOX_SSH_EXE`), then `%WINDIR%\System32\OpenSSH\ssh.exe`, then `ssh.exe`
+from `PATH`. For the agent it is the `ssh-agent.exe` next to `ssh.exe`, then
+`%WINDIR%\System32\OpenSSH\ssh-agent.exe`, then `PATH`.
+
+The paths are stored in the SshBox configuration and win over environment
 variables. A directory containing `ssh.exe` is also accepted. See
 [Native OpenSSH](openssh.md) for details.
 

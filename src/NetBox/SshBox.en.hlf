@@ -49,8 +49,9 @@ $# Settings Menu
      Open dialog for logging settings.
 
   #Integration#
-     Open dialog for external tool integration: PuTTY, Pageant, PuTTYgen
-     and the OpenSSH client (ssh.exe).
+     Open dialog for external tool integration: the SSH backend mode
+     (Auto/OpenSSH/PuTTY), the OpenSSH client (ssh.exe), the OpenSSH agent
+     (ssh-agent.exe), PuTTY, Pageant and PuTTYgen.
 
   #About#
      Show plugin information.
@@ -343,9 +344,15 @@ $# Supported Protocols
      Secure Shell File Transfer Protocol (SFTP) and SCP.
 
      SFTP and SCP sessions use the native OpenSSH client (ssh.exe) when it is
-     available. The client is taken from Integration settings, then from
-     SSHBOX_SSH_EXE (or NETBOX_SSH_EXE), then from the Windows OpenSSH
-     installation and finally from PATH.
+     available. The backend is selected in Integration settings: Auto (OpenSSH
+     when available, PuTTY otherwise), OpenSSH (always) or PuTTY (never). The
+     client is taken from Integration settings, then from SSHBOX_SSH_EXE
+     (or NETBOX_SSH_EXE), then from the Windows OpenSSH installation and
+     finally from PATH.
+
+     Integration settings also hold the OpenSSH agent path (ssh-agent.exe).
+     A running agent is reused; otherwise the plugin starts the configured one
+     and caches decrypted keys in it for the rest of the FAR session.
 
      Hosts defined in ~/.ssh/config are listed in the stored sessions panel.
      Every file pulled in with Include is shown as a folder, and such sessions
@@ -353,7 +360,7 @@ $# Supported Protocols
 
      Password, key passphrase and host key prompts are displayed by FAR
      through SshBoxAskpass.exe, which must be located next to SshBox.dll.
-     Set SSHBOX_SSH_CLIENT=putty to force the PuTTY engine instead.
+     SSHBOX_SSH_CLIENT=putty forces the PuTTY engine in Auto mode.
 
   #FTP/FTPS#
      File Transfer Protocol with TLS/SSL support.

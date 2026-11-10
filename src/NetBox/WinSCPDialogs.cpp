@@ -32,6 +32,8 @@
 #include <System.IOUtils.hpp>
 #include <S3FileSystem.h>
 #include <Sysutils.hpp>
+#include <OpenSshProcess.h>
+#include <OpenSshCommand.h>
 
 #ifdef max
 #undef max
@@ -1041,7 +1043,7 @@ bool TWinSCPPlugin::IntegrationConfigurationDialog()
   std::unique_ptr<TWinSCPDialog> DialogPtr(std::make_unique<TWinSCPDialog>(this));
   TWinSCPDialog * Dialog = DialogPtr.get();
 
-  Dialog->SetSize(TPoint(65, 16));
+  Dialog->SetSize(TPoint(65, 19));
   Dialog->SetCaption(FORMAT("%s - %s",
     GetMsg(NB_PLUGIN_TITLE), ::StripHotkey(GetMsg(NB_CONFIG_INTEGRATION))));
   Dialog->SetDialogGuid(&IntegrationConfigurationDialogGuid);
@@ -1070,9 +1072,28 @@ bool TWinSCPPlugin::IntegrationConfigurationDialog()
   TFarEdit * PuttygenPathEdit = MakeOwnedObject<TFarEdit>(Dialog);
 
   Text = MakeOwnedObject<TFarText>(Dialog);
+  Text->SetCaption(GetMsg(NB_INTEGRATION_SSH_CLIENT_MODE));
+
+  Dialog->SetNextItemPosition(ipRight);
+
+  TFarComboBox * SshClientModeCombo = MakeOwnedObject<TFarComboBox>(Dialog);
+  SshClientModeCombo->SetDropDownList(true);
+  SshClientModeCombo->SetWidth(12);
+  SshClientModeCombo->GetItems()->Add(GetMsg(NB_INTEGRATION_SSH_CLIENT_AUTO));
+  SshClientModeCombo->GetItems()->Add(GetMsg(NB_INTEGRATION_SSH_CLIENT_OPENSSH));
+  SshClientModeCombo->GetItems()->Add(GetMsg(NB_INTEGRATION_SSH_CLIENT_PUTTY));
+
+  Dialog->SetNextItemPosition(ipNewLine);
+
+  Text = MakeOwnedObject<TFarText>(Dialog);
   Text->SetCaption(GetMsg(NB_INTEGRATION_SSH_PATH));
 
   TFarEdit * SshPathEdit = MakeOwnedObject<TFarEdit>(Dialog);
+
+  Text = MakeOwnedObject<TFarText>(Dialog);
+  Text->SetCaption(GetMsg(NB_INTEGRATION_SSH_AGENT));
+
+  TFarEdit * SshAgentPathEdit = MakeOwnedObject<TFarEdit>(Dialog);
 
   Dialog->AddStandardButtons();
 
@@ -1081,7 +1102,28 @@ bool TWinSCPPlugin::IntegrationConfigurationDialog()
   TelnetForFtpInPuttyCheck->SetChecked(GetGUIConfiguration()->GetTelnetForFtpInPutty());
   PageantPathEdit->SetText(GetFarConfiguration()->GetPageantPath());
   PuttygenPathEdit->SetText(GetFarConfiguration()->GetPuttygenPath());
-  SshPathEdit->SetText(GetConfiguration()->GetSshPath());
+
+  int32_t SshClientMode = GetConfiguration()->GetSshClientMode();
+  if ((SshClientMode < OpenSsh::scmAuto) || (SshClientMode > OpenSsh::scmPuTTY))
+  {
+    SshClientMode = OpenSsh::scmAuto;
+  }
+  SshClientModeCombo->SetItemIndex(SshClientMode);
+
+  // Empty settings mean "automatic": show the path that will actually be used.
+  UnicodeString SshPath = GetConfiguration()->GetSshPath();
+  if (SshPath.IsEmpty())
+  {
+    SshPath = OpenSsh::TProcess::FindSshExecutable();
+  }
+  SshPathEdit->SetText(SshPath);
+
+  UnicodeString SshAgentPath = GetConfiguration()->GetSshAgentPath();
+  if (SshAgentPath.IsEmpty())
+  {
+    SshAgentPath = OpenSsh::TProcess::FindSshAgentExecutable(SshPath);
+  }
+  SshAgentPathEdit->SetText(SshAgentPath);
 
   const bool Result = (Dialog->ShowModal() == brOK);
 
@@ -1095,7 +1137,9 @@ bool TWinSCPPlugin::IntegrationConfigurationDialog()
       GetGUIConfiguration()->SetTelnetForFtpInPutty(TelnetForFtpInPuttyCheck->GetChecked());
       GetFarConfiguration()->SetPageantPath(PageantPathEdit->GetText());
       GetFarConfiguration()->SetPuttygenPath(PuttygenPathEdit->GetText());
+      GetConfiguration()->SetSshClientMode(SshClientModeCombo->GetItemIndex());
       GetConfiguration()->SetSshPath(SshPathEdit->GetText());
+      GetConfiguration()->SetSshAgentPath(SshAgentPathEdit->GetText());
     }
     __finally
     {

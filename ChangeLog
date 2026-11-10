@@ -11,6 +11,9 @@
  * OpenSSH client path setting in **Integration settings** (`Alt+Shift+W`);
    `SSHBOX_SSH_EXE`, `SSHBOX_SSH_CLIENT` and `SSHBOX_SSH_VERBOSE` environment
    variables with `NETBOX_*` fallbacks
+ * SSH backend selector in **Integration settings** (`Auto`/`OpenSSH`/`PuTTY`)
+   and OpenSSH agent path (`ssh-agent.exe`); the plugin starts the agent when
+   none is running and caches keys with `AddKeysToAgent=yes`
 
 ### Changed
 

@@ -237,6 +237,247 @@ std::wstring GetPluginDirectory()
   }
   return Result.substr(0, Position);
 }
+
+// ---------------------------------------------------------------------------
+// ssh-agent support
+//
+// The plugin prefers an agent that already runs: SSH_AUTH_SOCK from the Far
+// environment or the Windows agent pipe. Only when neither exists does it try
+// to start ssh-agent from the configured path. Windows' own ssh-agent.exe is a
+// service binary and fails with error 1058 when started directly, so a failed
+// attempt is expected and must stay harmless: ssh then asks for the passphrase.
+// ---------------------------------------------------------------------------
+
+constexpr const wchar_t * WindowsSshAgentPipe = L"\\\\.\\pipe\\openssh-ssh-agent";
+
+struct TAgentState
+{
+  void * Process{nullptr};
+  std::wstring Socket;
+  std::wstring Pid;
+  bool Attempted{false};
+};
+
+TAgentState GAgent;
+CRITICAL_SECTION GAgentSection;
+volatile LONG GAgentSectionReady = 0;
+
+void EnsureAgentSection()
+{
+  if (::InterlockedCompareExchange(&GAgentSectionReady, 1, 0) == 0)
+  {
+    ::InitializeCriticalSection(&GAgentSection);
+  }
+}
+
+class TAgentGuard
+{
+  TAgentGuard(const TAgentGuard &) = delete;
+  TAgentGuard & operator=(const TAgentGuard &) = delete;
+
+public:
+  TAgentGuard() { EnsureAgentSection(); ::EnterCriticalSection(&GAgentSection); }
+  ~TAgentGuard() { ::LeaveCriticalSection(&GAgentSection); }
+};
+
+std::wstring GetAgentPid()
+{
+  TAgentGuard Guard;
+  return GAgent.Pid;
+}
+
+bool IsPipeAvailable(const std::wstring & Name)
+{
+  const HANDLE Pipe = ::CreateFileW(Name.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr,
+    OPEN_EXISTING, 0, nullptr);
+  if (Pipe != INVALID_HANDLE_VALUE)
+  {
+    ::CloseHandle(Pipe);
+    return true;
+  }
+  // A busy pipe still means that somebody is listening.
+  return ::GetLastError() == ERROR_PIPE_BUSY;
+}
+
+std::wstring GetEnvironmentValue(const wchar_t * Name)
+{
+  wchar_t Buffer[32768];
+  const DWORD Length = ::GetEnvironmentVariableW(Name, Buffer, static_cast<DWORD>(_countof(Buffer)));
+  if ((Length > 0) && (Length < _countof(Buffer)))
+  {
+    return std::wstring(Buffer, Length);
+  }
+  return std::wstring();
+}
+
+std::wstring DefaultSshAgentPath()
+{
+  wchar_t Buffer[32768];
+  const DWORD Length = ::GetWindowsDirectoryW(Buffer, static_cast<DWORD>(_countof(Buffer)));
+  if ((Length > 0) && (Length < _countof(Buffer)))
+  {
+    return std::wstring(Buffer, Length) + L"\\System32\\OpenSSH\\ssh-agent.exe";
+  }
+  return std::wstring();
+}
+
+// Extracts "NAME=value" from ssh-agent output, where the value ends at ';',
+// whitespace or the end of the text.
+std::wstring ParseAgentValue(const std::string & Output, const char * Name)
+{
+  const std::string Key = std::string(Name) + "=";
+  const size_t Position = Output.find(Key);
+  if (Position == std::string::npos)
+  {
+    return std::wstring();
+  }
+  size_t Begin = Position + Key.size();
+  size_t End = Begin;
+  while ((End < Output.size()) && (Output[End] != ';') && (Output[End] != '\r') &&
+    (Output[End] != '\n') && (Output[End] != ' ') && (Output[End] != '\t'))
+  {
+    ++End;
+  }
+  if (End == Begin)
+  {
+    return std::wstring();
+  }
+  const std::string Value = Output.substr(Begin, End - Begin);
+  const int32_t WideLength = ::MultiByteToWideChar(CP_ACP, 0, Value.c_str(),
+    static_cast<int32_t>(Value.size()), nullptr, 0);
+  if (WideLength <= 0)
+  {
+    return std::wstring();
+  }
+  std::wstring Result(static_cast<size_t>(WideLength), L'\0');
+  ::MultiByteToWideChar(CP_ACP, 0, Value.c_str(), static_cast<int32_t>(Value.size()),
+    &Result[0], WideLength);
+  return Result;
+}
+
+bool StartSshAgent(const std::wstring & Executable, UnicodeString & Error)
+{
+  SECURITY_ATTRIBUTES SecurityAttributes{};
+  SecurityAttributes.nLength = sizeof(SecurityAttributes);
+  SecurityAttributes.bInheritHandle = TRUE;
+
+  HANDLE StdoutRead = nullptr;
+  HANDLE StdoutWrite = nullptr;
+  HANDLE StderrRead = nullptr;
+  HANDLE StderrWrite = nullptr;
+  if (!::CreatePipe(&StdoutRead, &StdoutWrite, &SecurityAttributes, 0) ||
+      !::CreatePipe(&StderrRead, &StderrWrite, &SecurityAttributes, 0))
+  {
+    Error = L"cannot create pipes for ssh-agent";
+    return false;
+  }
+  ::SetHandleInformation(StdoutRead, HANDLE_FLAG_INHERIT, 0);
+  ::SetHandleInformation(StderrRead, HANDLE_FLAG_INHERIT, 0);
+
+  STARTUPINFOW StartupInfo{};
+  StartupInfo.cb = sizeof(StartupInfo);
+  StartupInfo.dwFlags = STARTF_USESTDHANDLES;
+  // ssh-agent does not read stdin, but an explicit NUL handle is safer than
+  // NULL when STARTF_USESTDHANDLES is requested.
+  const HANDLE NullHandle = ::CreateFileW(L"NUL", GENERIC_READ | GENERIC_WRITE,
+    FILE_SHARE_READ | FILE_SHARE_WRITE, &SecurityAttributes, OPEN_EXISTING, 0, nullptr);
+  StartupInfo.hStdInput = (NullHandle != INVALID_HANDLE_VALUE) ? NullHandle : nullptr;
+  StartupInfo.hStdOutput = StdoutWrite;
+  StartupInfo.hStdError = StderrWrite;
+
+  std::wstring CommandLine = QuoteArgument(Executable);
+  std::vector<wchar_t> MutableCommandLine(CommandLine.begin(), CommandLine.end());
+  MutableCommandLine.push_back(L'\0');
+
+  PROCESS_INFORMATION ProcessInfo{};
+  const BOOL Created = ::CreateProcessW(Executable.c_str(), MutableCommandLine.data(),
+    nullptr, nullptr, TRUE, CREATE_NO_WINDOW, nullptr, nullptr, &StartupInfo, &ProcessInfo);
+
+  ::CloseHandle(StdoutWrite);
+  ::CloseHandle(StderrWrite);
+  if ((NullHandle != INVALID_HANDLE_VALUE) && (NullHandle != nullptr))
+  {
+    ::CloseHandle(NullHandle);
+  }
+
+  if (!Created)
+  {
+    Error = FromWide(FormatErrorMessage(::GetLastError()));
+    ::CloseHandle(StdoutRead);
+    ::CloseHandle(StderrRead);
+    return false;
+  }
+
+  ::CloseHandle(ProcessInfo.hThread);
+
+  std::string Output;
+  std::string Errors;
+  const DWORD Start = ::GetTickCount();
+  bool Parsed = false;
+  while (!Parsed && ((::GetTickCount() - Start) < 3000))
+  {
+    std::vector<char> Buffer;
+    bool Eof = false;
+    ReadPipe(StdoutRead, Buffer, Eof);
+    Output.append(Buffer.begin(), Buffer.end());
+    Buffer.clear();
+    bool ErrorEof = false;
+    ReadPipe(StderrRead, Buffer, ErrorEof);
+    Errors.append(Buffer.begin(), Buffer.end());
+
+    Parsed = (Output.find("SSH_AUTH_SOCK=") != std::string::npos);
+    if (!Parsed)
+    {
+      if (::WaitForSingleObject(ProcessInfo.hProcess, 10) == WAIT_OBJECT_0)
+      {
+        // Give the pipes a last chance to deliver the environment block.
+        Buffer.clear();
+        Eof = false;
+        ReadPipe(StdoutRead, Buffer, Eof);
+        Output.append(Buffer.begin(), Buffer.end());
+        Buffer.clear();
+        ErrorEof = false;
+        ReadPipe(StderrRead, Buffer, ErrorEof);
+        Errors.append(Buffer.begin(), Buffer.end());
+        Parsed = (Output.find("SSH_AUTH_SOCK=") != std::string::npos);
+        break;
+      }
+    }
+  }
+
+  ::CloseHandle(StdoutRead);
+  ::CloseHandle(StderrRead);
+
+  if (!Parsed)
+  {
+    if (::WaitForSingleObject(ProcessInfo.hProcess, 0) != WAIT_OBJECT_0)
+    {
+      ::TerminateProcess(ProcessInfo.hProcess, 1);
+      ::WaitForSingleObject(ProcessInfo.hProcess, 1000);
+    }
+    ::CloseHandle(ProcessInfo.hProcess);
+
+    std::wstring ErrorsWide(Errors.begin(), Errors.end());
+    ErrorsWide = Trim(ErrorsWide);
+    Error = ErrorsWide.empty()
+      ? UnicodeString(L"ssh-agent did not report SSH_AUTH_SOCK") : FromWide(ErrorsWide);
+    return false;
+  }
+
+  GAgent.Process = ProcessInfo.hProcess;
+  GAgent.Socket = ParseAgentValue(Output, "SSH_AUTH_SOCK");
+  GAgent.Pid = ParseAgentValue(Output, "SSH_AGENT_PID");
+  if (GAgent.Socket.empty())
+  {
+    ::TerminateProcess(static_cast<HANDLE>(GAgent.Process), 1);
+    ::WaitForSingleObject(static_cast<HANDLE>(GAgent.Process), 1000);
+    ::CloseHandle(static_cast<HANDLE>(GAgent.Process));
+    GAgent.Process = nullptr;
+    Error = L"ssh-agent reported an empty SSH_AUTH_SOCK";
+    return false;
+  }
+  return true;
+}
 } // namespace
 
 TProcess::TProcess() noexcept = default;
@@ -248,8 +489,8 @@ TProcess::~TProcess() noexcept
 
 bool TProcess::Start(const std::vector<UnicodeString> & Arguments,
   const UnicodeString & Password, const UnicodeString & Passphrase,
-  const UnicodeString & SshPath, const UnicodeString & AskpassPipe,
-  uint64_t AskpassToken, UnicodeString & Error)
+  const UnicodeString & SshPath, const UnicodeString & SshAgentPath,
+  const UnicodeString & AskpassPipe, uint64_t AskpassToken, UnicodeString & Error)
 {
   Close();
 
@@ -287,6 +528,23 @@ bool TProcess::Start(const std::vector<UnicodeString> & Arguments,
   EnvironmentOverrides.emplace_back(L"NETBOX_ASKPASS_PASSPHRASE", ToWide(Passphrase));
   EnvironmentOverrides.emplace_back(L"NETBOX_ASKPASS_PIPE", ToWide(AskpassPipe));
   EnvironmentOverrides.emplace_back(L"NETBOX_ASKPASS_TOKEN", std::to_wstring(AskpassToken));
+
+  // Use the ssh-agent that is already running, or start the configured one.
+  UnicodeString AgentError;
+  if (EnsureSshAgent(SshPath, SshAgentPath, AgentError))
+  {
+    const UnicodeString Socket = SshAgentSocket();
+    if (!Socket.IsEmpty())
+    {
+      EnvironmentOverrides.emplace_back(L"SSH_AUTH_SOCK", ToWide(Socket));
+      const std::wstring AgentPid = GetAgentPid();
+      if (!AgentPid.empty())
+      {
+        EnvironmentOverrides.emplace_back(L"SSH_AGENT_PID", AgentPid);
+      }
+    }
+  }
+
   const std::vector<wchar_t> Environment = BuildEnvironment(EnvironmentOverrides);
 
   SECURITY_ATTRIBUTES SecurityAttributes{};
@@ -646,5 +904,130 @@ UnicodeString TProcess::FindAskpassExecutable(const UnicodeString & SshPath)
   }
 
   return UnicodeString();
+}
+
+UnicodeString TProcess::FindSshAgentExecutable(const UnicodeString & SshPath,
+  const UnicodeString & SshAgentPath)
+{
+  wchar_t Buffer[32768];
+
+  if (!SshAgentPath.IsEmpty())
+  {
+    std::wstring Candidate = ToWide(SshAgentPath);
+    if (FileExistsW(Candidate))
+    {
+      return FromWide(Candidate);
+    }
+    const DWORD Attributes = ::GetFileAttributesW(Candidate.c_str());
+    if ((Attributes != INVALID_FILE_ATTRIBUTES) && ((Attributes & FILE_ATTRIBUTE_DIRECTORY) != 0))
+    {
+      Candidate += L"\\ssh-agent.exe";
+      if (FileExistsW(Candidate))
+      {
+        return FromWide(Candidate);
+      }
+    }
+  }
+
+  const UnicodeString SshExecutable = FindSshExecutable(SshPath);
+  if (!SshExecutable.IsEmpty())
+  {
+    std::wstring Directory = ToWide(SshExecutable);
+    const size_t Position = Directory.find_last_of(L"\\/");
+    if (Position != std::wstring::npos)
+    {
+      Directory.erase(Position);
+      const std::wstring Candidate = Directory + L"\\ssh-agent.exe";
+      if (FileExistsW(Candidate))
+      {
+        return FromWide(Candidate);
+      }
+    }
+  }
+
+  const std::wstring Default = DefaultSshAgentPath();
+  if (FileExistsW(Default))
+  {
+    return FromWide(Default);
+  }
+
+  const DWORD Length = ::SearchPathW(nullptr, L"ssh-agent.exe", nullptr,
+    static_cast<DWORD>(_countof(Buffer)), Buffer, nullptr);
+  if ((Length > 0) && (Length < _countof(Buffer)))
+  {
+    const std::wstring Candidate(Buffer, Length);
+    if (FileExistsW(Candidate))
+    {
+      return FromWide(Candidate);
+    }
+  }
+
+  return UnicodeString();
+}
+
+bool TProcess::HasSshAgent()
+{
+  TAgentGuard Guard;
+  return !GAgent.Socket.empty();
+}
+
+UnicodeString TProcess::SshAgentSocket()
+{
+  TAgentGuard Guard;
+  return GAgent.Socket.empty() ? UnicodeString() : FromWide(GAgent.Socket);
+}
+
+bool TProcess::EnsureSshAgent(const UnicodeString & SshPath, const UnicodeString & SshAgentPath,
+  UnicodeString & Error)
+{
+  TAgentGuard Guard;
+
+  if (!GAgent.Socket.empty())
+  {
+    return true;
+  }
+  if (GAgent.Attempted)
+  {
+    return false;
+  }
+  GAgent.Attempted = true;
+
+  const std::wstring ExistingSocket = GetEnvironmentValue(L"SSH_AUTH_SOCK");
+  if (!ExistingSocket.empty())
+  {
+    GAgent.Socket = ExistingSocket;
+    GAgent.Pid = GetEnvironmentValue(L"SSH_AGENT_PID");
+    return true;
+  }
+
+  if (IsPipeAvailable(WindowsSshAgentPipe))
+  {
+    GAgent.Socket = WindowsSshAgentPipe;
+    return true;
+  }
+
+  const UnicodeString Agent = FindSshAgentExecutable(SshPath, SshAgentPath);
+  if (Agent.IsEmpty())
+  {
+    Error = L"ssh-agent.exe not found";
+    return false;
+  }
+
+  return StartSshAgent(ToWide(Agent), Error);
+}
+
+void TProcess::ShutdownSshAgent()
+{
+  TAgentGuard Guard;
+
+  if (GAgent.Process != nullptr)
+  {
+    ::TerminateProcess(static_cast<HANDLE>(GAgent.Process), 0);
+    ::WaitForSingleObject(static_cast<HANDLE>(GAgent.Process), 1000);
+    ::CloseHandle(static_cast<HANDLE>(GAgent.Process));
+    GAgent.Process = nullptr;
+  }
+  GAgent.Socket.clear();
+  GAgent.Pid.clear();
 }
 } // namespace OpenSsh

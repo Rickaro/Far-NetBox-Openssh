@@ -10,6 +10,7 @@
 #include "resource.h"
 #include "FarDialog.h"
 #include "plugin_version.hpp"
+#include <OpenSshProcess.h>
 
 static HINSTANCE HInstanceDLL;
 static _invalid_parameter_handler PrevInvalidParameterHandler = nullptr;
@@ -137,6 +138,8 @@ void WINAPI ExitFARW(const struct ExitInfo * Info)
   }
   // Now Guard is released
   DestroyPlugin();
+  // Stop the ssh-agent the plugin started for this Far session, if any.
+  OpenSsh::TProcess::ShutdownSshAgent();
   // Brief pause to let any pending ACTL_SYNCHRO / condition-variable
   // callbacks from worker threads drain before Far begins unloading DLLs.
   ::Sleep(200);

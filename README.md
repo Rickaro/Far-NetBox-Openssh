@@ -40,13 +40,21 @@ Far3_x64\Far.exe
 Open the plugin commands menu with **`Alt+Shift+W`**, then choose
 **Integration settings**. The dialog contains:
 
-- **OpenSSH client (`ssh.exe`)** — full path to the `ssh.exe` to use. Leave it
-  empty to use the automatic search.
-- Putty/Pageant/PuTTYgen paths — used only by the PuTTY fallback.
+- **SSH client (mode)** — `Auto`, `OpenSSH` or `PuTTY`. `Auto` uses OpenSSH
+  when `ssh.exe` is available and falls back to PuTTY; `OpenSSH` always uses
+  the external client; `PuTTY` never does.
+- **OpenSSH client (`ssh.exe`)** — full path to the `ssh.exe` to use. Empty
+  means automatic search; the dialog shows the standard Windows path when it
+  exists.
+- **OpenSSH agent (`ssh-agent.exe`)** — path to the agent used for key
+  authentication. When no agent is running, the plugin starts this one and
+  passes `SSH_AUTH_SOCK`/`SSH_AGENT_PID` to ssh; keys decrypted once are cached
+  in the agent for the rest of the Far session (`AddKeysToAgent=yes`).
+- Putty/Pageant/PuTTYgen paths — used only by the PuTTY backend.
 
-The path is stored in the SshBox configuration and takes precedence over
-environment variables. It must point to `ssh.exe` (not `scp.exe`); a directory
-containing `ssh.exe` is also accepted.
+All paths are stored in the SshBox configuration and take precedence over
+environment variables. The client path must point to `ssh.exe` (not
+`scp.exe`); a directory containing `ssh.exe` is also accepted.
 
 ### Environment variables
 
@@ -57,15 +65,28 @@ restarted.
 | Variable | Meaning |
 |----------|---------|
 | `SSHBOX_SSH_EXE` | Path to `ssh.exe`; legacy `NETBOX_SSH_EXE` is also accepted |
-| `SSHBOX_SSH_CLIENT` | `putty` forces the PuTTY backend; any other value keeps automatic selection; legacy `NETBOX_SSH_CLIENT` is also accepted |
+| `SSHBOX_SSH_CLIENT` | `putty` forces the PuTTY backend, but only when the mode is `Auto`; legacy `NETBOX_SSH_CLIENT` is also accepted |
 | `SSHBOX_SSH_VERBOSE` | Adds `-o LogLevel=DEBUG1` to ssh for diagnostics; legacy `NETBOX_SSH_VERBOSE` is also accepted |
 
 Precedence for the SSH client:
+
+1. **Integration settings → SSH client (mode)**, when it is not `Auto`
+2. `SSHBOX_SSH_CLIENT` / `NETBOX_SSH_CLIENT` (only in `Auto`)
+3. `ssh.exe` availability decides between OpenSSH and PuTTY in `Auto`
+
+Precedence for the `ssh.exe` path:
 
 1. **Integration settings → OpenSSH client**
 2. `SSHBOX_SSH_EXE` / `NETBOX_SSH_EXE`
 3. `%WINDIR%\System32\OpenSSH\ssh.exe`
 4. `ssh.exe` from `PATH`
+
+Precedence for `ssh-agent.exe`:
+
+1. **Integration settings → OpenSSH agent**
+2. `ssh-agent.exe` next to the resolved `ssh.exe`
+3. `%WINDIR%\System32\OpenSSH\ssh-agent.exe`
+4. `ssh-agent.exe` from `PATH`
 
 Example for the current session only:
 
@@ -79,6 +100,7 @@ The plugin writes the resolved client path to the session log:
 
 ```text
 OpenSSH executable: C:\...\ssh.exe
+OpenSSH agent: \\.\pipe\openssh-ssh-agent
 Starting OpenSSH client: ...
 ```
 

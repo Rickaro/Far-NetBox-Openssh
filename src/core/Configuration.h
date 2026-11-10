@@ -141,6 +141,8 @@ private:
   UnicodeString FRandomSeedFile;
   UnicodeString FPuttyRegistryStorageKey;
   UnicodeString FSshPath;
+  UnicodeString FSshAgentPath;
+  int32_t FSshClientMode{0};
   UnicodeString FExternalIpAddress;
   int32_t FLocalPortNumberMin{0};
   int32_t FLocalPortNumberMax{0};
@@ -186,6 +188,10 @@ public:
   void SetPuttyRegistryStorageKey(const UnicodeString & Value);
   void SetSshPath(const UnicodeString & Value);
   UnicodeString GetSshPath() const { return FSshPath; }
+  void SetSshAgentPath(const UnicodeString & Value);
+  UnicodeString GetSshAgentPath() const { return FSshAgentPath; }
+  void SetSshClientMode(int32_t Value);
+  int32_t GetSshClientMode() const { return FSshClientMode; }
   UnicodeString GetSshHostKeysSubKey() const;
   UnicodeString GetRootKeyStr() const;
   UnicodeString GetConfigurationSubKey() const;
@@ -401,6 +407,10 @@ public:
   RWProperty<UnicodeString> PuttyRegistryStorageKey{nb::bind(&TConfiguration::GetPuttyRegistryStorageKey, this), nb::bind(&TConfiguration::SetPuttyRegistryStorageKey, this)};
   __property UnicodeString SshPath  = { read=FSshPath, write=SetSshPath };
   RWProperty<UnicodeString> SshPath{nb::bind(&TConfiguration::GetSshPath, this), nb::bind(&TConfiguration::SetSshPath, this)};
+  __property UnicodeString SshAgentPath  = { read=FSshAgentPath, write=SetSshAgentPath };
+  RWProperty<UnicodeString> SshAgentPath{nb::bind(&TConfiguration::GetSshAgentPath, this), nb::bind(&TConfiguration::SetSshAgentPath, this)};
+  __property int32_t SshClientMode  = { read=FSshClientMode, write=SetSshClientMode };
+  RWProperty<int32_t> SshClientMode{nb::bind(&TConfiguration::GetSshClientMode, this), nb::bind(&TConfiguration::SetSshClientMode, this)};
   __property UnicodeString PuttySessionsKey  = { read=DoGetPuttySessionsKey };
   const ROProperty<UnicodeString> PuttySessionsKey{nb::bind(&TConfiguration::DoGetPuttySessionsKey, this)};
   __property UnicodeString PuttySessionsSubKey  = { read=GetPuttySessionsSubKey };

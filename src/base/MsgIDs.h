@@ -1469,4 +1469,9 @@ enum MsgIDs {
 
     NB_OPENSSH_CONFIG_SESSION_READONLY,  // "This session comes from the OpenSSH configuration file. Edit ~/.ssh/config instead."
     NB_INTEGRATION_SSH_PATH,  // "OpenSSH client (&ssh.exe):"
+    NB_INTEGRATION_SSH_CLIENT_MODE,  // "SSH client (&mode):"
+    NB_INTEGRATION_SSH_CLIENT_AUTO,  // "Auto"
+    NB_INTEGRATION_SSH_CLIENT_OPENSSH,  // "OpenSSH"
+    NB_INTEGRATION_SSH_CLIENT_PUTTY,  // "PuTTY"
+    NB_INTEGRATION_SSH_AGENT,  // "OpenSSH agent (&ssh-agent.exe):"
 };

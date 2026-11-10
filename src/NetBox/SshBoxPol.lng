@@ -1466,3 +1466,8 @@
 "You are at the root remote directory. Disconnect from the server?"
 "Ta sesja pochodzi z pliku konfiguracji OpenSSH i jest tylko do odczytu. Zmień ~/.ssh/config."
 "Klient OpenSSH (&ssh.exe):"
+"Klient SSH (&tryb):"
+"Automatyczny"
+"OpenSSH"
+"PuTTY"
+"Agent OpenSSH (&ssh-agent.exe):"

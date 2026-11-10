@@ -237,7 +237,7 @@ int main()
       std::vector<UnicodeString> Arguments;
       Arguments.push_back(L"-V");
       CHECK(Process.Start(Arguments, UnicodeString(), UnicodeString(),
-        UnicodeString(), UnicodeString(), 0, Error));
+        UnicodeString(), UnicodeString(), UnicodeString(), 0, Error));
 
       std::vector<uint8_t> Stdout;
       std::string Stderr;
