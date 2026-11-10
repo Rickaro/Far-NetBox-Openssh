@@ -171,6 +171,9 @@ std::vector<UnicodeString> BuildSshArguments(const TSessionData * Data, bool Scp
 
   const bool Askpass = !TProcess::FindAskpassExecutable().IsEmpty();
   AddOption(Arguments, L"BatchMode", Askpass ? L"no" : L"yes");
+  // sftp/scp normally set this themselves; we invoke ssh directly, so make
+  // sure port forwardings from ~/.ssh/config do not open extra listeners.
+  AddOption(Arguments, L"ClearAllForwardings", L"yes");
   wchar_t VerboseValue[8]{};
   const bool Verbose = (::GetEnvironmentVariableW(L"NETBOX_SSH_VERBOSE", VerboseValue,
     static_cast<DWORD>(_countof(VerboseValue))) > 0);

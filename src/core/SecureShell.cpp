@@ -661,6 +661,7 @@ void TSecureShell::OpenOpenSsh()
   {
     CommandLine += L" " + Argument;
   }
+  LogEvent(FORMAT("OpenSSH executable: %s", OpenSsh::TProcess::FindSshExecutable()));
   LogEvent(FORMAT("Starting OpenSSH client: %s", CommandLine));
 
   FUI->Information(LoadStr(STATUS_CONNECT));

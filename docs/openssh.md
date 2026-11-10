@@ -103,6 +103,9 @@ semantics identical to the PuTTY-based implementation.
 * Windows 10/11 is required for the OpenSSH backend (the plugin itself still
   builds for x86/x64/ARM64, and the other protocols keep their previous
   platform support).
+* Port-forwarding directives from `~/.ssh/config` (`LocalForward`,
+  `RemoteForward`, `DynamicForward`) are not applied to NetBox sessions: the
+  plugin passes `ClearAllForwardings=yes`, just like `sftp`/`scp` do.
 * Interactive terminal sessions, fingerprint scanning and password changes are
   not implemented on this path and fall back to PuTTY.
 * `SCP` runs through an OpenSSH shell. Servers that disable the shell but keep
