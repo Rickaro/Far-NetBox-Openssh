@@ -1473,5 +1473,6 @@
 "OpenSSH agent (&ssh-agent.exe):"
 "Connect via jump host"
 "Session: %s"
-"&Jump host (config alias or user@host[:port]):"
+"&Jump host:"
 "Connect via jump &host"
+"Alias from ~/.ssh/config or user@host[:port]."

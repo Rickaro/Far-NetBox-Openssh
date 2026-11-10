@@ -1473,5 +1473,6 @@
 "Agente OpenSSH (&ssh-agent.exe):"
 "Conexión a través de un host intermedio"
 "Sesión: %s"
-"Host intermedio (&J, alias o user@host[:port]):"
+"Host intermedio (&J):"
 "Conectar por host intermedio"
+"Alias de ~/.ssh/config o user@host[:port]."

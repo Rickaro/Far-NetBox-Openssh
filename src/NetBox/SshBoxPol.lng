@@ -1473,5 +1473,6 @@
 "Agent OpenSSH (&ssh-agent.exe):"
 "Połączenie przez host pośredni"
 "Sesja: %s"
-"Host pośredni (&J, alias lub user@host[:port]):"
+"Host pośredni (&J):"
 "Połącz przez host pośredni"
+"Alias z ~/.ssh/config lub user@host[:port]."

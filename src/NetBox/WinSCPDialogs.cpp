@@ -1154,7 +1154,7 @@ UnicodeString TWinSCPPlugin::SelectJumpHost(const UnicodeString & TargetName, TS
   std::unique_ptr<TWinSCPDialog> DialogPtr(std::make_unique<TWinSCPDialog>(this));
   TWinSCPDialog * Dialog = DialogPtr.get();
 
-  Dialog->SetSize(TPoint(62, 11));
+  Dialog->SetSize(TPoint(62, 10));
   Dialog->SetCaption(FORMAT("%s - %s",
     GetMsg(NB_PLUGIN_TITLE), ::StripHotkey(GetMsg(NB_JUMP_HOST_TITLE))));
   Dialog->SetDialogGuid(&JumpHostDialogGuid);
@@ -1165,10 +1165,8 @@ UnicodeString TWinSCPPlugin::SelectJumpHost(const UnicodeString & TargetName, TS
   TFarText * Text = MakeOwnedObject<TFarText>(Dialog);
   Text->SetCaption(GetMsg(NB_JUMP_HOST_PROMPT));
 
-  Dialog->SetNextItemPosition(ipRight);
-
   TFarComboBox * JumpHostCombo = MakeOwnedObject<TFarComboBox>(Dialog);
-  JumpHostCombo->SetWidth(38);
+  JumpHostCombo->SetWidth(56);
   if (Candidates != nullptr)
   {
     for (int32_t Index = 0; Index < Candidates->GetCount(); ++Index)
@@ -1177,7 +1175,8 @@ UnicodeString TWinSCPPlugin::SelectJumpHost(const UnicodeString & TargetName, TS
     }
   }
 
-  Dialog->SetNextItemPosition(ipNewLine);
+  Text = MakeOwnedObject<TFarText>(Dialog);
+  Text->SetCaption(GetMsg(NB_JUMP_HOST_HINT));
 
   Dialog->AddStandardButtons();
 
