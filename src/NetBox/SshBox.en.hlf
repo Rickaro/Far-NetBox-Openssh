@@ -117,12 +117,12 @@ $# Session/Connection Dialog
      Use command line or shortcuts to connect quickly without storing session.
 
   #Connect via jump host#
-     Select a host in the session list and press Ctrl+Shift+J to connect it
-     through a jump host. Pick an alias from ~/.ssh/config in the drop-down or
-     type user@host[:port]; nothing is written to the configuration or to
-     ~/.ssh/config. The jump host is passed to ssh as -J, and the session name
-     is shown as "name via jump". The last entered value is remembered for the
-     rest of the FAR session.
+     Select a host in the session list and press Ctrl+Shift+J (or use
+     Alt+Shift+W - Connect via jump host) to connect it through a jump host.
+     Pick an alias from ~/.ssh/config in the drop-down or type user@host[:port];
+     nothing is written to the configuration or to ~/.ssh/config. The jump host
+     is passed to ssh as -J, and the session name is shown as "name via jump".
+     The last entered value is remembered for the rest of the FAR session.
 
 @cmdline
 $# Command Line Support
@@ -191,6 +191,10 @@ $# Commands Menu
 
   #Home directory#
      Go to remote user's home directory.
+
+  #Connect via jump host#
+     Connect the focused session in the stored-session list through a jump
+     host. Same as Ctrl+Shift+J in the session list.
 
   #Synchronize browsing#
      Toggle synchronized browsing mode.

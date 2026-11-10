@@ -667,6 +667,8 @@ void TWinSCPPlugin::CommandsMenu(bool FromFileSystem)
   const int32_t MOpenDirectory = MenuItems->AddString(GetMsg(NB_MENU_COMMANDS_OPEN_DIRECTORY), FSVisible);
   const int32_t MLocationProfiles = MenuItems->AddString(GetMsg(NB_MENU_COMMANDS_LOCATION_PROFILES), FSVisible);
   const int32_t MHomeDirectory = MenuItems->AddString(GetMsg(NB_MENU_COMMANDS_HOME_DIRECTORY), FSVisible);
+  const int32_t MJumpHost = MenuItems->AddString(GetMsg(NB_MENU_COMMANDS_JUMP_HOST),
+    (WinSCPFileSystem != nullptr) && WinSCPFileSystem->CanConnectViaJumpHost());
   const int32_t MSynchronizeBrowsing = MenuItems->AddString(GetMsg(NB_MENU_COMMANDS_SYNCHRONIZE_BROWSING), FSVisible);
   MenuItems->AddSeparator(FSVisible);
   const int32_t MPageant = MenuItems->AddString(GetMsg(NB_MENU_COMMANDS_PAGEANT), FromFileSystem);
@@ -768,6 +770,10 @@ void TWinSCPPlugin::CommandsMenu(bool FromFileSystem)
     else if (Result == MHomeDirectory && WinSCPFileSystem)
     {
       WinSCPFileSystem->HomeDirectory();
+    }
+    else if ((Result == MJumpHost) && WinSCPFileSystem)
+    {
+      WinSCPFileSystem->ConnectFocusedViaJumpHost();
     }
     else if (Result == MConfigure)
     {

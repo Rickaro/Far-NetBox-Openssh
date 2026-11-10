@@ -100,6 +100,10 @@ public:
   virtual ~TWinSCPFileSystem() noexcept override;
   void InitWinSCPFileSystem(const TSecureShell * SecureShell);
 
+  // True when the focused panel item is an SSH session in the stored-session list.
+  bool CanConnectViaJumpHost();
+  void ConnectFocusedViaJumpHost();
+
   virtual void Close() override;
 
 protected:

@@ -1477,4 +1477,5 @@ enum MsgIDs {
     NB_JUMP_HOST_TITLE,  // "Connect via jump host"
     NB_JUMP_HOST_TARGET,  // "Session: %s"
     NB_JUMP_HOST_PROMPT,  // "&Jump host (config alias or user@host[:port]):"
+    NB_MENU_COMMANDS_JUMP_HOST,  // "Connect via jump &host"
 };

@@ -56,8 +56,8 @@ environment variables. The client path must point to `ssh.exe` (not
 
 ### Connect through a jump host
 
-Select a host in the session list and press **`Ctrl+Shift+J`**. A dialog asks
-for the jump host:
+Select a host in the session list and press **`Ctrl+Shift+J`** (or use
+**`Alt+Shift+W` → Connect via jump host**). A dialog asks for the jump host:
 
 - pick an alias from `~/.ssh/config` in the drop-down, or type
   `user@host[:port]` (IPv6 literals in brackets are accepted);

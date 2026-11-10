@@ -1474,3 +1474,4 @@
 "Conexión a través de un host intermedio"
 "Sesión: %s"
 "Host intermedio (&J, alias o user@host[:port]):"
+"Conectar por host intermedio"

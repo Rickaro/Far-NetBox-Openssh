@@ -827,6 +827,41 @@ void TWinSCPFileSystem::EditConnectSession(TSessionData * Data, bool Edit)
   } end_try__finally
 }
 
+bool TWinSCPFileSystem::CanConnectViaJumpHost()
+{
+  if (!IsSessionList())
+  {
+    return false;
+  }
+  TFarPanelInfo * const * PanelInfo = GetPanelInfo();
+  const TFarPanelItem * Focused = PanelInfo && *PanelInfo ? (*PanelInfo)->GetFocusedItem() : nullptr;
+  if ((Focused == nullptr) || !Focused->GetIsFile() || (Focused->GetUserData() == nullptr))
+  {
+    return false;
+  }
+  const TSessionData * Data = cast_to<TSessionData>(ToObj(Focused->GetUserData()));
+  return (Data != nullptr) && Data->GetUsesSsh();
+}
+
+void TWinSCPFileSystem::ConnectFocusedViaJumpHost()
+{
+  if (!IsSessionList())
+  {
+    return;
+  }
+  TFarPanelInfo * const * PanelInfo = GetPanelInfo();
+  const TFarPanelItem * Focused = PanelInfo && *PanelInfo ? (*PanelInfo)->GetFocusedItem() : nullptr;
+  if ((Focused == nullptr) || !Focused->GetIsFile() || (Focused->GetUserData() == nullptr))
+  {
+    return;
+  }
+  TSessionData * Data = cast_to<TSessionData>(ToObj(Focused->GetUserData()));
+  if ((Data != nullptr) && Data->GetUsesSsh())
+  {
+    ConnectViaJumpHost(Data);
+  }
+}
+
 void TWinSCPFileSystem::ConnectViaJumpHost(TSessionData * Data)
 {
   if (Data == nullptr)
