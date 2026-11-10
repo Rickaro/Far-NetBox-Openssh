@@ -2,7 +2,9 @@
 
 # Getting Started
 
-Build Far-NetBox from source and install it as a Far Manager 3.0 plugin.
+Build SshBox from source and install it as a Far Manager 3.0 plugin. SshBox is
+installed into its own `Plugins\SshBox` directory and can be used alongside the
+original NetBox plugin.
 
 ## Prerequisites
 
@@ -36,7 +38,7 @@ cmd /c build-all.bat
 Each script:
 1. Calls `vcvarsall.bat` to set up the MSVC environment
 2. Runs CMake configure with `-DOPT_CREATE_PLUGIN_DIR=ON`
-3. Builds with Ninja and installs the plugin DLL to `Far3_<platform>/Plugins/NetBox/`
+3. Builds with Ninja and installs the plugin DLL to `Far3_<platform>/Plugins/SshBox/`
 
 ### Visual Studio Solution
 
@@ -63,10 +65,11 @@ The build script places the plugin automatically when `OPT_CREATE_PLUGIN_DIR=ON`
 ```
 Far3_x64/
   Plugins/
-    NetBox/
-      NetBox.dll
-      NetBox.map
-      NetBoxEng.lng
+    SshBox/
+      SshBox.dll
+      SshBoxAskpass.exe
+      SshBox.map
+      SshBoxEng.lng
       ...
 ```
 
@@ -76,11 +79,12 @@ Copy `Far3_x64/` next to your Far Manager installation, or launch `Far3_x64\Far.
 
 1. Launch Far Manager
 2. Press `F11` to open the plugins menu
-3. Select **NetBox**
+3. Select **SshBox**
 4. Create a new session (`Shift+F4`) or open an existing one
 5. Enter host, protocol, credentials, and connect
 
-Session data is stored in `%LOCALAPPDATA%\NetBox\`.
+Hosts from `~/.ssh/config` are listed in the session panel; see
+[Native OpenSSH](openssh.md).
 
 ## Verify It Works
 
@@ -90,7 +94,8 @@ After connecting, you should see the remote file listing in a Far panel. Try:
 - Copying a file with `F5`
 - Editing a remote file with `F4`
 
-Check the log at `%LOCALAPPDATA%\NetBox\netbox.log` if something goes wrong.
+Check the log at `%TEMP%\<session name>.log` if something goes wrong. Logging is
+disabled by default; enable it in **`Alt+Shift+W` → Logging settings**.
 
 ## Troubleshooting
 

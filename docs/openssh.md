@@ -126,7 +126,7 @@ semantics identical to the PuTTY-based implementation.
 ### Enabling the log
 
 Logging is disabled by default, and the default file is **not**
-`%LOCALAPPDATA%\SshBox\netbox.log`. It is:
+`%LOCALAPPDATA%\SshBox\sshbox.log`. It is:
 
 ```
 %TEMP%\<session name>.log

@@ -60,7 +60,7 @@ HANDLE WINAPI OpenPluginW(const OpenInfo *Info);
 void WINAPI ClosePluginW(HANDLE Handle, int ExitCode);
 ```
 
-Far Manager loads `NetBox.dll` and calls these entry points. The plugin registers menu items, handles panel events, and manages session lifecycle.
+Far Manager loads `SshBox.dll` and calls these entry points. The plugin registers menu items, handles panel events, and manages session lifecycle.
 
 ## Protocol Abstraction
 
@@ -126,7 +126,7 @@ TCustomFileSystem *CreateFileSystem(TSessionData * Data)
 
 | Artifact | Location |
 |----------|----------|
-| Plugin DLL | `Far3_<platform>/Plugins/NetBox/` |
+| Plugin DLL | `Far3_<platform>/Plugins/SshBox/` |
 | Platform dirs | `Far3_x86/`, `Far3_x64/`, `Far3_ARM64/` |
 | Build dir | `build-<config>/` |
 

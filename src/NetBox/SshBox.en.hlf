@@ -49,7 +49,8 @@ $# Settings Menu
      Open dialog for logging settings.
 
   #Integration#
-     Open dialog for external tool integration (PuTTY, Pageant, etc.).
+     Open dialog for external tool integration: PuTTY, Pageant, PuTTYgen
+     and the OpenSSH client (ssh.exe).
 
   #About#
      Show plugin information.
@@ -341,6 +342,19 @@ $# Supported Protocols
   #SSH/SFTP#
      Secure Shell File Transfer Protocol (SFTP) and SCP.
 
+     SFTP and SCP sessions use the native OpenSSH client (ssh.exe) when it is
+     available. The client is taken from Integration settings, then from
+     SSHBOX_SSH_EXE (or NETBOX_SSH_EXE), then from the Windows OpenSSH
+     installation and finally from PATH.
+
+     Hosts defined in ~/.ssh/config are listed in the stored sessions panel.
+     Every file pulled in with Include is shown as a folder, and such sessions
+     are read-only: edit the configuration file instead.
+
+     Password, key passphrase and host key prompts are displayed by FAR
+     through SshBoxAskpass.exe, which must be located next to SshBox.dll.
+     Set SSHBOX_SSH_CLIENT=putty to force the PuTTY engine instead.
+
   #FTP/FTPS#
      File Transfer Protocol with TLS/SSL support.
 
@@ -540,7 +554,7 @@ $# About SshBox
   file systems via various protocols.
 
   #Home page:#
-     https://github.com/SshBox-WinSCP/SshBox
+     https://github.com/Rickaro/Far-NetBox-Openssh
 
   #Based on:#
      WinSCP (https://winscp.net/)

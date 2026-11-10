@@ -2,16 +2,18 @@
 
 # Testing
 
-Far-NetBox is a Far Manager plugin with no automated unit test suite. Testing is performed manually inside Far Manager.
+Far-NetBox (built as SshBox) is a Far Manager plugin. Core helpers have
+automated tests under `tests/core` (`ctest`), but UI and protocol behaviour is
+verified manually inside Far Manager.
 
 ## Manual Regression Testing
 
 ### Prerequisites
 
 1. Build the project with `OPT_CREATE_PLUGIN_DIR=ON`
-2. Confirm `Far3_<platform>/Plugins/NetBox/NetBox.dll` exists
+2. Confirm `Far3_<platform>/Plugins/SshBox/SshBox.dll` and `SshBoxAskpass.exe` exist
 3. Launch `Far3_<platform>/Far.exe`
-4. Press `F11` → NetBox to open the plugin
+4. Press `F11` → SshBox to open the plugin
 
 ### Core Test Cases
 
@@ -28,6 +30,11 @@ Far-NetBox is a Far Manager plugin with no automated unit test suite. Testing is
 | Session save/load | Save session → Restart Far → Reopen session | Settings preserved |
 | WebDAV TLS | Create WebDAV session → Enable HTTPS | TLS handshake succeeds |
 | S3 bucket listing | Create S3 session → Connect | Bucket and object list displays |
+| OpenSSH config hosts | `~/.ssh/config` with `Host`/`Include` → open plugin | Hosts listed; each `Include` file shown as a folder |
+| OpenSSH key auth | Session for a `Host` with `IdentityFile` → connect | Connects with `publickey`, no password prompt |
+| Askpass bridge | Session that needs a password → connect | Far password dialog appears, no extra window |
+| SSH path setting | `Alt+Shift+W` → Integration settings → set `ssh.exe` | Path persisted; log shows the same `ssh.exe` |
+| Settings entry | `Alt+Shift+W` → Integration settings, close and reopen | No crash (regression for 0xC0000005) |
 
 ### Protocol-Specific Tests
 
@@ -41,7 +48,10 @@ Far-NetBox is a Far Manager plugin with no automated unit test suite. Testing is
 
 ## Logging
 
-Debug output is written to `%LOCALAPPDATA%\NetBox\netbox.log`. Increase log level via `tinylog` configuration or by enabling protocol-level debug output in session settings.
+Session logging is disabled by default. Enable it in **`Alt+Shift+W` → Logging
+settings**; the default file is `%TEMP%\<session name>.log`. Set
+`SSHBOX_SSH_VERBOSE=1` before starting Far to add `-o LogLevel=DEBUG1` to
+OpenSSH invocations.
 
 ## Debugging in Visual Studio
 
@@ -60,7 +70,7 @@ Before declaring any change complete:
 
 - [ ] Clean build with zero warnings (MSVC W4)
 - [ ] No modifications to `libs/`
-- [ ] Plugin DLL in `Far3_<platform>/Plugins/NetBox/`
+- [ ] Plugin DLL in `Far3_<platform>/Plugins/SshBox/`
 - [ ] CRLF line endings on all modified files
 - [ ] UTF-8 without BOM
 - [ ] No trailing whitespace

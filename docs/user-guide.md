@@ -174,7 +174,7 @@ The **SshSimple** setting simplifies the SCP command set for compatibility with 
 
 ## Commands Menu
 
-Press **F11** → **NetBox** to access the plugin commands menu. The following commands are available:
+Press **F11** → **SshBox** to access the plugin commands menu. The following commands are available:
 
 | Command | Description |
 |---------|-------------|
@@ -188,7 +188,7 @@ Press **F11** → **NetBox** to access the plugin commands menu. The following c
 | **Generate URL** | Generate a session URL or script snippet (Batch/CmdLine/PowerShell) |
 | **Putty** | Open the session in PuTTY terminal |
 | **Pageant** | Launch Pageant SSH authentication agent |
-| **Configure** | Open NetBox configuration dialog |
+| **Configure** | Open SshBox configuration dialog (also reachable via `F9` → Options → Plugin configuration) |
 | **About** | Show version and build information |
 
 ### Generate URL
@@ -196,7 +196,7 @@ Press **F11** → **NetBox** to access the plugin commands menu. The following c
 The Generate URL dialog produces session URLs and script snippets for automation:
 
 - **URL tab**: Generate a connection URL with selectable components (username, password, host key, remote directory, raw settings)
-- **Script tab**: Generate script snippets in Batch, Command-line, or PowerShell format, using `netbox.com` as the executable
+- **Script tab**: Generate script snippets in Batch, Command-line, or PowerShell format, using `sshbox.com` as the executable
 - **Copy to Clipboard**: Copy the generated URL or script to the system clipboard
 
 ### Location Profiles
@@ -216,15 +216,28 @@ The Cleanup Configuration dialog allows selective removal of stored data:
 
 | Category | Description |
 |----------|-------------|
-| Configuration | Reset all NetBox configuration settings |
+| Configuration | Reset all SshBox configuration settings |
 | Stored sessions | Delete all saved session entries |
 | Caches | Clear cached data (directory listings, host keys) |
-| INI file | Delete the NetBox INI configuration file |
+| INI file | Delete the SshBox INI configuration file |
 | Random seed file | Delete the SSH random seed file |
 
 ### Generate Key
 
 The **Generate Key** button on the Session dialog Auth tab launches PuTTYgen to create SSH key pairs. This button is only enabled when the PuTTYgen path is configured and the key file is a PuTTY native format (.ppk).
+
+### Integration Settings
+
+Open the plugin commands menu with **`Alt+Shift+W`** and choose
+**Integration settings**. Besides the PuTTY, Pageant and PuTTYgen paths, the
+dialog contains **OpenSSH client (`ssh.exe`)**, the full path to the OpenSSH
+client used for SFTP and SCP sessions. Leave it empty to use the automatic
+search order: `SSHBOX_SSH_EXE` (`NETBOX_SSH_EXE`), then
+`%WINDIR%\System32\OpenSSH\ssh.exe`, then `ssh.exe` from `PATH`.
+
+The path is stored in the SshBox configuration and wins over environment
+variables. A directory containing `ssh.exe` is also accepted. See
+[Native OpenSSH](openssh.md) for details.
 
 ### Copy Dialog Preset
 

@@ -7,7 +7,21 @@
    `Include`, `ProxyJump`, key authentication and ssh-agent
  * Hosts from `~/.ssh/config` are shown in the stored-session panel; `Include`
    files are displayed as folders
- * `NetBoxAskpass.exe` helper for password, passphrase and host-key prompts
+ * `SshBoxAskpass.exe` helper for password, passphrase and host-key prompts
+ * OpenSSH client path setting in **Integration settings** (`Alt+Shift+W`);
+   `SSHBOX_SSH_EXE`, `SSHBOX_SSH_CLIENT` and `SSHBOX_SSH_VERBOSE` environment
+   variables with `NETBOX_*` fallbacks
+
+### Changed
+
+ * Plugin is built and installed as **SshBox** (`SshBox.dll`, `Plugins\SshBox`,
+   `sshbox:` command prefix, `SshBox 3` configuration key) so it can be used
+   alongside the original NetBox plugin
+
+### Fixed
+
+ * Fix `0xC0000005` crash when opening plugin settings caused by the dialog
+   idle thread racing with `ACTL_SYNCHRO` delivery
 
 ## [26.7.3.617] - 2026-07-24
 

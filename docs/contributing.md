@@ -149,9 +149,10 @@ git -C libs\openssl-3 apply -p3 0001-openssl-apply-NetBox-patches.patch
 
 1. Build with `OPT_CREATE_PLUGIN_DIR=ON`
 2. Launch Far Manager from platform directory: `Far3_x64\Far.exe`
-3. Press `F11` → Plugins → NetBox
+3. Press `F11` → Plugins → SshBox
 4. Test the affected functionality
-5. Check log: `%LOCALAPPDATA%\NetBox\netbox.log`
+5. Enable logging with `Alt+Shift+W` → Logging settings; log is written to
+   `%TEMP%\<session name>.log`
 
 ## Anti-Patterns
 
@@ -180,7 +181,7 @@ The GitHub Actions `release.yml` workflow includes a dedicated `cl_x86_winxp_rel
 To verify that a locally built x86 binary is XP-compatible:
 
 ```cmd
-dumpbin /headers Far3_x86\Plugins\NetBox\NetBox.dll | findstr /i "subsystem"
+dumpbin /headers Far3_x86\Plugins\SshBox\SshBox.dll | findstr /i "subsystem"
 ```
 
 The output must contain `5.01`. If it shows `6.00`, the binary requires Windows Vista or later.
