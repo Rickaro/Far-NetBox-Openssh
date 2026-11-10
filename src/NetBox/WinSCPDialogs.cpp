@@ -1149,6 +1149,52 @@ bool TWinSCPPlugin::IntegrationConfigurationDialog()
   return Result;
 }
 
+UnicodeString TWinSCPPlugin::SelectJumpHost(const UnicodeString & TargetName, TStrings * Candidates)
+{
+  std::unique_ptr<TWinSCPDialog> DialogPtr(std::make_unique<TWinSCPDialog>(this));
+  TWinSCPDialog * Dialog = DialogPtr.get();
+
+  Dialog->SetSize(TPoint(62, 11));
+  Dialog->SetCaption(FORMAT("%s - %s",
+    GetMsg(NB_PLUGIN_TITLE), ::StripHotkey(GetMsg(NB_JUMP_HOST_TITLE))));
+  Dialog->SetDialogGuid(&JumpHostDialogGuid);
+
+  TFarText * TargetText = MakeOwnedObject<TFarText>(Dialog);
+  TargetText->SetCaption(FORMAT(GetMsg(NB_JUMP_HOST_TARGET), TargetName));
+
+  TFarText * Text = MakeOwnedObject<TFarText>(Dialog);
+  Text->SetCaption(GetMsg(NB_JUMP_HOST_PROMPT));
+
+  Dialog->SetNextItemPosition(ipRight);
+
+  TFarComboBox * JumpHostCombo = MakeOwnedObject<TFarComboBox>(Dialog);
+  JumpHostCombo->SetWidth(38);
+  if (Candidates != nullptr)
+  {
+    for (int32_t Index = 0; Index < Candidates->GetCount(); ++Index)
+    {
+      JumpHostCombo->GetItems()->Add(Candidates->GetString(Index));
+    }
+  }
+
+  Dialog->SetNextItemPosition(ipNewLine);
+
+  Dialog->AddStandardButtons();
+
+  // Remember the last value for the rest of the Far session; nothing is saved
+  // to the configuration or to ~/.ssh/config.
+  static UnicodeString LastJumpHost;
+  JumpHostCombo->SetText(LastJumpHost);
+
+  if (Dialog->ShowModal() != brOK)
+  {
+    return UnicodeString();
+  }
+
+  LastJumpHost = JumpHostCombo->GetText().Trim();
+  return LastJumpHost;
+}
+
 class TMasterPasswordDialog final : public TWinSCPDialog
 {
   CUSTOM_MEM_ALLOCATION_IMPL

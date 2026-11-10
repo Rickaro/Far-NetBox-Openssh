@@ -1471,3 +1471,6 @@
 "OpenSSH"
 "PuTTY"
 "OpenSSH agent (&ssh-agent.exe):"
+"Connect via jump host"
+"Session: %s"
+"&Jump host (config alias or user@host[:port]):"

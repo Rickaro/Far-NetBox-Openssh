@@ -139,6 +139,7 @@ protected:
   void DuplicateOrRenameSession(TSessionData * Data,
     bool Duplicate);
   void FocusSession(const TSessionData * Data);
+  void ConnectViaJumpHost(TSessionData * Data);
   void DeleteSession(TSessionData * Data, void * AParam);
   void LoadOpenSshSessions();
   void ProcessSessions(TObjectList * PanelItems,

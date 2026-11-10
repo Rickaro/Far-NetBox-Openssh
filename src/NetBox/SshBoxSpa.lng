@@ -1471,3 +1471,6 @@
 "OpenSSH"
 "PuTTY"
 "Agente OpenSSH (&ssh-agent.exe):"
+"Conexión a través de un host intermedio"
+"Sesión: %s"
+"Host intermedio (&J, alias o user@host[:port]):"

@@ -39,6 +39,34 @@ troubleshooting. An explicit mode in Integration settings wins over that
 variable. `SSHBOX_SSH_EXE=C:\path\to\ssh.exe` overrides the client location in
 every mode.
 
+## Connect through a jump host
+
+Sessions can be connected through a jump host without adding
+`host-via-jump` entries to `~/.ssh/config`:
+
+1. Focus a host in the session list.
+2. Press `Ctrl+Shift+J`.
+3. Choose a jump host — an alias from `~/.ssh/config` or a typed
+   `user@host[:port]` — and confirm.
+
+The plugin clones the focused session, sets the WinSCP-style tunnel fields
+(`Tunnel`, `TunnelHostName`, `TunnelUserName`, `TunnelPortNumber`) on the copy
+and connects it. `BuildSshArguments` translates that into
+`-J [user@]host[:port]`, so ssh resolves the alias and applies its own `User`,
+`Port`, `IdentityFile` and `ProxyJump`. The original session is not modified
+and nothing is persisted; the panel title shows `<session> via <jump>`.
+
+The drop-down is filled with the concrete hosts of `~/.ssh/config` (including
+`Include` files) and the hosts of stored SSH sessions. The last entered value
+is reused for the next connection during the same Far session.
+
+Limitations:
+
+* The jump host must be reachable by the same `ssh.exe`; nested `ProxyJump`
+  inside the jump alias is handled by OpenSSH itself.
+* In PuTTY mode the same tunnel fields are handled by the built-in tunnel
+  implementation instead of `-J`.
+
 ## SSH agent
 
 Integration settings also contain the path to `ssh-agent.exe`. The plugin uses

@@ -1474,4 +1474,7 @@ enum MsgIDs {
     NB_INTEGRATION_SSH_CLIENT_OPENSSH,  // "OpenSSH"
     NB_INTEGRATION_SSH_CLIENT_PUTTY,  // "PuTTY"
     NB_INTEGRATION_SSH_AGENT,  // "OpenSSH agent (&ssh-agent.exe):"
+    NB_JUMP_HOST_TITLE,  // "Connect via jump host"
+    NB_JUMP_HOST_TARGET,  // "Session: %s"
+    NB_JUMP_HOST_PROMPT,  // "&Jump host (config alias or user@host[:port]):"
 };

@@ -55,6 +55,9 @@ protected:
   void CleanupDialog();
   void GenerateUrlDialog(TSessionData * SessionData);
   void LocationProfilesDialog(TWinSCPFileSystem * FileSystem);
+  // Asks for a jump host for the given session and returns it as entered.
+  // Candidates are offered in a drop-down list but free text is allowed.
+  UnicodeString SelectJumpHost(const UnicodeString & TargetName, TStrings * Candidates);
 protected:
   const NetBoxPrivateInfo * GetSystemFunctions() const { return static_cast<const NetBoxPrivateInfo *>(FStartupInfo.Private); }
   void DeleteLocalFile(const UnicodeString & LocalFileName);

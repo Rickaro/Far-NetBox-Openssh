@@ -14,6 +14,8 @@
  * SSH backend selector in **Integration settings** (`Auto`/`OpenSSH`/`PuTTY`)
    and OpenSSH agent path (`ssh-agent.exe`); the plugin starts the agent when
    none is running and caches keys with `AddKeysToAgent=yes`
+ * Connect a session through a jump host with **Ctrl+Shift+J** in the session
+   list, without creating `host-via-jump` entries in `~/.ssh/config`
 
 ### Changed
 

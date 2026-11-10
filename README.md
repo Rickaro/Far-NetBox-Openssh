@@ -54,6 +54,26 @@ All paths are stored in the SshBox configuration and take precedence over
 environment variables. The client path must point to `ssh.exe` (not
 `scp.exe`); a directory containing `ssh.exe` is also accepted.
 
+### Connect through a jump host
+
+Select a host in the session list and press **`Ctrl+Shift+J`**. A dialog asks
+for the jump host:
+
+- pick an alias from `~/.ssh/config` in the drop-down, or type
+  `user@host[:port]` (IPv6 literals in brackets are accepted);
+- the session is connected with `-J <jump>` and the panel title becomes
+  `<session> via <jump>`;
+- nothing is written to the SshBox configuration and no `host-via-jump` entry
+  is added to `~/.ssh/config`;
+- the value is remembered for the rest of the Far session, so the next
+  `Ctrl+Shift+J` starts from it.
+
+The candidate list contains every concrete host alias from `~/.ssh/config`
+(including `Include` files) plus the hosts of stored SSH sessions. Because ssh
+resolves the alias itself, its `User`, `Port`, `IdentityFile` and `ProxyJump`
+apply to the jump connection. In PuTTY mode the same settings drive the
+built-in tunnel instead of `-J`.
+
 ### SSH agent
 
 The plugin picks the first agent that is available:

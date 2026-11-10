@@ -827,6 +827,131 @@ void TWinSCPFileSystem::EditConnectSession(TSessionData * Data, bool Edit)
   } end_try__finally
 }
 
+void TWinSCPFileSystem::ConnectViaJumpHost(TSessionData * Data)
+{
+  if (Data == nullptr)
+  {
+    return;
+  }
+
+  // Offer every host alias from ~/.ssh/config plus stored session hosts, so
+  // the user can pick a jump host without creating an extra session entry.
+  LoadOpenSshSessions();
+
+  std::unique_ptr<TStringList> Candidates(std::make_unique<TStringList>());
+  const auto AddCandidate = [&Candidates](const UnicodeString & Host)
+  {
+    if (!Host.IsEmpty() && (Candidates->IndexOf(Host) < 0))
+    {
+      Candidates->Add(Host);
+    }
+  };
+
+  const UnicodeString TargetHost = Data->GetHostNameExpanded();
+  for (const std::unique_ptr<TSessionData> & Session : FOpenSshSessions)
+  {
+    if (Session->GetHostName() != TargetHost)
+    {
+      AddCandidate(Session->GetHostName());
+    }
+  }
+  if (GetStoredSessions() != nullptr)
+  {
+    for (int32_t Index = 0; Index < GetStoredSessions()->GetCount(); ++Index)
+    {
+      TSessionData * Session = GetStoredSessions()->GetSession(Index);
+      if ((Session != nullptr) && Session->GetUsesSsh() &&
+        (Session->GetHostNameExpanded() != TargetHost))
+      {
+        AddCandidate(Session->GetHostName());
+      }
+    }
+  }
+  Candidates->Sort();
+
+  const UnicodeString JumpSpec = GetWinSCPPlugin()->SelectJumpHost(
+    Data->GetSessionName(), Candidates.get());
+  if (JumpSpec.IsEmpty())
+  {
+    return;
+  }
+
+  // Split "user@host[:port]" so the existing tunnel translation builds the
+  // right -J argument (IPv6 literals in brackets are handled too).
+  UnicodeString Rest = JumpSpec.Trim();
+  UnicodeString User;
+  UnicodeString Host = Rest;
+  int32_t Port = 0;
+
+  const int32_t At = Rest.Pos(L"@");
+  if (At > 1)
+  {
+    User = Rest.SubString(1, At - 1);
+    Rest = Rest.SubString(At + 1, Rest.Length() - At);
+  }
+
+  if ((Rest.Length() > 1) && (Rest[1] == L'['))
+  {
+    const int32_t Close = Rest.Pos(L"]");
+    if (Close > 2)
+    {
+      Host = Rest.SubString(2, Close - 2);
+      const UnicodeString Tail = Rest.SubString(Close + 1, Rest.Length() - Close);
+      if ((Tail.Length() > 1) && (Tail[1] == L':'))
+      {
+        Port = ::StrToIntDef(Tail.SubString(2, Tail.Length() - 1), 0);
+      }
+    }
+  }
+  else
+  {
+    const int32_t Colon = Rest.LastDelimiter(L":");
+    if ((Colon > 1) && (Colon < Rest.Length()))
+    {
+      const UnicodeString PortText = Rest.SubString(Colon + 1, Rest.Length() - Colon);
+      const int32_t ParsedPort = ::StrToIntDef(PortText, 0);
+      if (ParsedPort > 0)
+      {
+        Host = Rest.SubString(1, Colon - 1);
+        Port = ParsedPort;
+      }
+    }
+  }
+
+  if (Host.IsEmpty())
+  {
+    return;
+  }
+
+  std::unique_ptr<TSessionData> JumpData(Data->Clone());
+  JumpData->SetTunnel(true);
+  JumpData->SetTunnelHostName(Host);
+  JumpData->SetTunnelPortNumber(Port);
+  JumpData->SetTunnelUserName(User);
+  // Never reuse credentials or forwardings that belong to the target session.
+  JumpData->SetTunnelPassword(UnicodeString());
+  JumpData->SetTunnelPassphrase(UnicodeString());
+  JumpData->SetTunnelPublicKeyFile(UnicodeString());
+  JumpData->SetTunnelPortFwd(UnicodeString());
+  JumpData->SetTunnelLocalPortNumber(0);
+  JumpData->SetNameOverride(FORMAT("%s via %s", Data->GetSessionName(), JumpSpec));
+
+  AppLogFmt(L"Connecting %s via jump host %s", Data->GetSessionName(), JumpSpec);
+
+  if (Connect(JumpData.get()))
+  {
+    if (UpdatePanel())
+    {
+      RedrawPanel();
+      TFarPanelInfo ** PanelInfo = GetPanelInfo();
+      if (PanelInfo && *PanelInfo && (*PanelInfo)->GetItemCount())
+      {
+        (*PanelInfo)->SetFocusedIndex(0);
+      }
+    }
+  }
+}
+
 void TWinSCPFileSystem::EditConnectSession(TSessionData * Data, bool Edit, bool NewData, bool FillInConnect)
 {
   TSessionActionEnum Action;
@@ -1206,13 +1331,22 @@ bool TWinSCPFileSystem::ProcessKeyEx(int32_t Key, uint32_t ControlState)
       Handled = true;
     }
 
-    if (Key == 'R' && CheckControlMaskSet(ControlState, CTRLMASK))
+    if ((Key == 'R') && CheckControlMaskSet(ControlState, CTRLMASK))
     {
       DeleteStoredSessions();
       if (UpdatePanel())
       {
         RedrawPanel();
       }
+      Handled = true;
+    }
+
+    // Connect the focused session through a jump host chosen on the fly. No
+    // host-via-jump entry is written to the configuration or ~/.ssh/config.
+    if ((Key == 'J') && CheckControlMaskSet(ControlState, CTRLMASK, SHIFTMASK) &&
+      (Data != nullptr) && Data->GetUsesSsh())
+    {
+      ConnectViaJumpHost(Data);
       Handled = true;
     }
   }
