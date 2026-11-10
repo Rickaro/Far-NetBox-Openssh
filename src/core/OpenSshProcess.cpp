@@ -256,7 +256,7 @@ bool TProcess::Start(const std::vector<UnicodeString> & Arguments,
   const UnicodeString SshExecutable = FindSshExecutable(SshPath);
   if (SshExecutable.IsEmpty())
   {
-    Error = L"OpenSSH client (ssh.exe) not found. Install OpenSSH Client or set NETBOX_SSH_EXE.";
+    Error = L"OpenSSH client (ssh.exe) not found. Install OpenSSH Client, set the path in Integration settings, or set SSHBOX_SSH_EXE.";
     return false;
   }
 
