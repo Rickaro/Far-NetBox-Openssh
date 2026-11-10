@@ -1166,7 +1166,7 @@ UnicodeString TWinSCPPlugin::SelectJumpHost(const UnicodeString & TargetName, TS
   Text->SetCaption(GetMsg(NB_JUMP_HOST_PROMPT));
 
   TFarComboBox * JumpHostCombo = MakeOwnedObject<TFarComboBox>(Dialog);
-  JumpHostCombo->SetWidth(51);
+  JumpHostCombo->SetWidth(50);
   if (Candidates != nullptr)
   {
     for (int32_t Index = 0; Index < Candidates->GetCount(); ++Index)
