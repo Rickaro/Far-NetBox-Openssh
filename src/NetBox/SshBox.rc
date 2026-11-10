@@ -11,16 +11,16 @@ FILETYPE 0x2
         BLOCK "000004E4"
         {
             VALUE "CompanyName", "Mikhail Lukashov\0"
-            VALUE "FileDescription", "NetBox: SFTP/FTP/FTPS/SCP/WebDAV/S3 client for Far Manager 3.0\0"
+            VALUE "FileDescription", "SshBox: SFTP/SCP client for Far Manager 3.0 using OpenSSH\0"
             VALUE "FileVersion", PLUGIN_VERSION_STR "\0"
-            VALUE "InternalName", "FarNetBox\0"
+            VALUE "InternalName", "FarSshBox\0"
             VALUE "LegalCopyright", "(c) 2011, 2026 Mikhail Lukashov\0"
             VALUE "LegalTrademarks", "\0"
-            VALUE "OriginalFilename", "NetBox.dll\0"
-            VALUE "ProductName", "NetBox\0"
+            VALUE "OriginalFilename", "SshBox.dll\0"
+            VALUE "ProductName", "SshBox\0"
             VALUE "ProductVersion", PLUGIN_VERSION_STR "\0"
             VALUE "ReleaseType", "beta\0"
-            VALUE "WWW", "https://github.com/michaellukashov/Far-NetBox\0"
+            VALUE "WWW", "https://github.com/Rickaro/Far-NetBox-Openssh\0"
         }
     }
 

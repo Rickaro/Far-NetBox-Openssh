@@ -24,7 +24,8 @@ public:
 
   bool Start(const std::vector<UnicodeString> & Arguments,
     const UnicodeString & Password, const UnicodeString & Passphrase,
-    const UnicodeString & AskpassPipe, uint64_t AskpassToken, UnicodeString & Error);
+    const UnicodeString & SshPath, const UnicodeString & AskpassPipe,
+    uint64_t AskpassToken, UnicodeString & Error);
   void Close();
 
   bool Write(const uint8_t * Data, size_t Length, UnicodeString & Error);
@@ -37,9 +38,9 @@ public:
   bool HasOutput() const;
   bool HasExited();  bool GetExitCode(uint32_t & ExitCode);
 
-  static bool IsAvailable();
-  static UnicodeString FindSshExecutable();
-  static UnicodeString FindAskpassExecutable();
+  static bool IsAvailable(const UnicodeString & SshPath = UnicodeString());
+  static UnicodeString FindSshExecutable(const UnicodeString & SshPath = UnicodeString());
+  static UnicodeString FindAskpassExecutable(const UnicodeString & SshPath = UnicodeString());
 
 private:
   void CloseHandles();

@@ -52,14 +52,8 @@ public:
       {
         if (!IsFinished() && FDialog && FDialog->GetHandle() && !FDialog->FIdlePending && !FDialog->FClosing)
         {
-          TCustomFarPlugin * Plugin = FDialog->GetFarPlugin();
-          if (Plugin)
-          {
-            FDialog->FIdlePending = true;
-            FDialog->FSynchroParams.SynchroEvent = nb::bind(&TFarDialog::Idle, FDialog.get(), nullptr);
-            FDialog->FSynchroParams.Sender = FDialog.get();
-            Plugin->FarAdvControl(ACTL_SYNCHRO, 0, &FDialog->FSynchroParams);
-          }
+          FDialog->FIdlePending = true;
+          FDialog->PostIdle();
         }
       }
     }
@@ -95,6 +89,7 @@ private:
 
 TFarDialog::TFarDialog(gsl::not_null<TCustomFarPlugin *> AFarPlugin) noexcept :
   TObject(OBJECT_CLASS_TFarDialog),
+  FSynchroParams(new TSynchroParams()),
   FFarPlugin(AFarPlugin)
 {
 }
@@ -103,6 +98,23 @@ TFarDialog::~TFarDialog() noexcept
 {
   FClosing = true;
   FTIdleThread->Close();
+  if (FSynchroParams != nullptr)
+  {
+    TSynchroParams * Params = FSynchroParams;
+    FSynchroParams = nullptr;
+    bool Delete = false;
+    {
+      TGuard Guard(Params->Section);
+      Params->Orphaned = true;
+      Params->Sender = nullptr;
+      Params->SynchroEvent = nullptr;
+      Delete = (Params->Pending == 0);
+    }
+    if (Delete)
+    {
+      delete Params;
+    }
+  }
   for (int32_t Index = 0; Index < GetItemCount(); ++Index)
   {
     TFarDialogItem * Item = GetItem(Index);
@@ -116,6 +128,33 @@ TFarDialog::~TFarDialog() noexcept
   SAFE_CLOSE_HANDLE(FSynchronizeObjects[0]);
   SAFE_CLOSE_HANDLE(FSynchronizeObjects[1]);
   FHandle = nullptr;
+}
+
+void TFarDialog::PostIdle()
+{
+  PostSynchro(nb::bind(&TFarDialog::Idle, this, nullptr));
+}
+
+void TFarDialog::PostSynchro(const TSynchroEvent & Event)
+{
+  TSynchroParams * Params = FSynchroParams;
+  if (Params == nullptr)
+  {
+    return;
+  }
+
+  {
+    TGuard Guard(Params->Section);
+    if (Params->Orphaned)
+    {
+      return;
+    }
+    Params->SynchroEvent = Event;
+    Params->Sender = this;
+    ++Params->Pending;
+  }
+
+  FFarPlugin->FarAdvControl(ACTL_SYNCHRO, 0, Params);
 }
 
 void TFarDialog::SetIdleInterval(DWORD Millisecs)
@@ -793,7 +832,7 @@ int32_t TFarDialog::ShowModal()
       const TFarEnvGuard Guard;
       const TRect Bounds = GetBounds();
       Handle = Info.DialogInit(
-        &NetBoxPluginGuid, GetDialogGuid(),
+        &SshBoxPluginGuid, GetDialogGuid(),
         Bounds.Left, Bounds.Top, Bounds.Right, Bounds.Bottom,
         HelpTopic.c_str(), FDialogItems,
         GetItemCount(), 0, GetFlags(),

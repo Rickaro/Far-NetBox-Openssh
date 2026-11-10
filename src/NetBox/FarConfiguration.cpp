@@ -79,7 +79,7 @@ void TFarConfiguration::Default()
 THierarchicalStorage * TFarConfiguration::CreateScpStorage(bool & SessionList)
 {
   nb::used(SessionList);
-  THierarchicalStorage * Storage = FFarPlugin ? new TFar3Storage(GetRegistryStorageKey(), NetBoxPluginGuid, FFarPlugin->GetStartupInfo()->SettingsControl) : TGUIConfiguration::CreateScpStorage(SessionList);
+  THierarchicalStorage * Storage = FFarPlugin ? new TFar3Storage(GetRegistryStorageKey(), SshBoxPluginGuid, FFarPlugin->GetStartupInfo()->SettingsControl) : TGUIConfiguration::CreateScpStorage(SessionList);
   Storage->Init();
   return Storage;
 }

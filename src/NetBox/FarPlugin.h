@@ -95,6 +95,11 @@ public:
   TSynchroParams() = default;
   TSynchroEvent SynchroEvent;
   TFarDialog * Sender{nullptr};
+  // Guards the lifetime of the object across the worker thread that posts
+  // ACTL_SYNCHRO and the dialog that owns the callback.
+  TCriticalSection Section;
+  int32_t Pending{0};
+  bool Orphaned{false};
 };
 
 enum NetBoxSystemSettings

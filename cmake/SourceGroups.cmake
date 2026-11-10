@@ -265,7 +265,7 @@ function(netbox_define_resource_sources)
     resource/TextsFileZilla.rc
     resource/TextsWin1.rc
     NetBox/resource.h
-    NetBox/NetBox.rc
-    NetBox/NetBox.def
+    NetBox/SshBox.rc
+    NetBox/SshBox.def
   PARENT_SCOPE)
 endfunction()

@@ -33,12 +33,12 @@ void ShowExtendedException(Exception * E)
 
 UnicodeString GetAppNameString()
 {
-  return "NetBox";
+  return "SshBox";
 }
 
 UnicodeString GetRegistryKey()
 {
-  return "NetBox 3"; // TODO: output NetBoxPluginGuid
+  return "SshBox 3"; // TODO: output SshBoxPluginGuid
 }
 
 void Busy(bool /*Start*/)
@@ -48,7 +48,7 @@ void Busy(bool /*Start*/)
 
 UnicodeString GetSshVersionString()
 {
-  UnicodeString Result = UnicodeString("NetBox-Far");
+  UnicodeString Result = UnicodeString("SshBox-Far");
   const UnicodeString ProductVersion = GetConfiguration()->GetProductVersion();
   if (!ProductVersion.IsEmpty())
     Result += FORMAT("-%s", ProductVersion);

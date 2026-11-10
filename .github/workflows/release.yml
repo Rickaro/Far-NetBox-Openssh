@@ -87,13 +87,13 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_ENV"
           echo "version_short=$VERSION_SHORT" >> "$GITHUB_ENV"
 
-          echo "Building NetBox v${VERSION_SHORT} (run #${GITHUB_RUN_NUMBER})"
+          echo "Building SshBox v${VERSION_SHORT} (run #${GITHUB_RUN_NUMBER})"
 
       - name: Set artifact names
         shell: bash
         run: |
-          echo "netbox_name=NetBox.${{ matrix.platform_label }}.${{ env.version }}.7z" >> "$GITHUB_ENV"
-          echo "netbox_pdb_name=NetBox.${{ matrix.platform_label }}.${{ env.version }}.pdb.7z" >> "$GITHUB_ENV"
+          echo "sshbox_name=SshBox.${{ matrix.platform_label }}.${{ env.version }}.7z" >> "$GITHUB_ENV"
+          echo "sshbox_pdb_name=SshBox.${{ matrix.platform_label }}.${{ env.version }}.pdb.7z" >> "$GITHUB_ENV"
 
       - name: Add C++ build tools to PATH
         uses: step-security/msvc-dev-cmd@v1.13.1
@@ -152,7 +152,7 @@ jobs:
       - name: Verify plugin directory
         shell: bash
         run: |
-          PLUGIN_DIR="./Far3_${{ matrix.platform }}/Plugins/NetBox"
+          PLUGIN_DIR="./Far3_${{ matrix.platform }}/Plugins/SshBox"
           if [[ ! -d "$PLUGIN_DIR" ]]; then
             echo "::error::Plugin directory not found: $PLUGIN_DIR"
             exit 1
@@ -168,31 +168,31 @@ jobs:
           PLUGIN_DIR="./Far3_${{ matrix.platform }}/Plugins"
 
           # Main archive (exclude PDB files)
-          echo "Creating main archive: ${{ env.netbox_name }}"
-          7z a -m0=LZMA -mf=BCJ2 -mx9 "${{ env.netbox_name }}" "${PLUGIN_DIR}/*" -xr!*.pdb
+          echo "Creating main archive: ${{ env.sshbox_name }}"
+          7z a -m0=LZMA -mf=BCJ2 -mx9 "${{ env.sshbox_name }}" "${PLUGIN_DIR}/*" -xr!*.pdb
 
           # PDB archive (only if exists)
-          PDB_FILE="${PLUGIN_DIR}/NetBox/NetBox.pdb"
+          PDB_FILE="${PLUGIN_DIR}/SshBox/SshBox.pdb"
           if [[ -f "$PDB_FILE" ]]; then
-            echo "Creating PDB archive: ${{ env.netbox_pdb_name }}"
-            7z a -m0=LZMA -mf=off -mx9 "${{ env.netbox_pdb_name }}" "$PDB_FILE"
+            echo "Creating PDB archive: ${{ env.sshbox_pdb_name }}"
+            7z a -m0=LZMA -mf=off -mx9 "${{ env.sshbox_pdb_name }}" "$PDB_FILE"
           else
             echo "::warning::PDB file not found: $PDB_FILE"
           fi
 
           # Display archive sizes
-          if [[ -f "${{ env.netbox_name }}" ]]; then
-            echo "Main archive size: $(du -h "${{ env.netbox_name }}" | cut -f1)"
-            7z l "${{ env.netbox_name }}"
+          if [[ -f "${{ env.sshbox_name }}" ]]; then
+            echo "Main archive size: $(du -h "${{ env.sshbox_name }}" | cut -f1)"
+            7z l "${{ env.sshbox_name }}"
           fi
-          if [[ -f "${{ env.netbox_pdb_name }}" ]]; then
-            echo "PDB archive size: $(du -h "${{ env.netbox_pdb_name }}" | cut -f1)"
+          if [[ -f "${{ env.sshbox_pdb_name }}" ]]; then
+            echo "PDB archive size: $(du -h "${{ env.sshbox_pdb_name }}" | cut -f1)"
           fi
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: FarNetBox.${{ matrix.platform_label }}
+          name: SshBox.${{ matrix.platform_label }}
           path: ./*.7z
           overwrite: true
           retention-days: 30
@@ -216,16 +216,16 @@ jobs:
       - name: Download archives
         uses: actions/download-artifact@v7
         with:
-          pattern: FarNetBox.*
-          path: FarNetBox/
+          pattern: SshBox.*
+          path: SshBox/
           merge-multiple: true
 
       - name: Verify downloaded files
         shell: bash
         run: |
           echo "Downloaded artifacts:"
-          ls -laR FarNetBox/
-          ARCHIVE_COUNT=$(find FarNetBox/ -name "*.7z" | wc -l)
+          ls -laR SshBox/
+          ARCHIVE_COUNT=$(find SshBox/ -name "*.7z" | wc -l)
           echo "Total .7z archives: $ARCHIVE_COUNT"
           if [[ "$ARCHIVE_COUNT" -lt 1 ]]; then
             echo "::error::No .7z archives found"
@@ -238,7 +238,7 @@ jobs:
           set -euo pipefail
 
           RELEASE_TAG="v${{ env.version }}"
-          RELEASE_TITLE="NetBox ${{ env.version_short }}"
+          RELEASE_TITLE="SshBox ${{ env.version_short }}"
 
           echo "Creating release: $RELEASE_TAG"
           echo "Title: $RELEASE_TITLE"
@@ -247,7 +247,7 @@ jobs:
             --draft \
             --generate-notes \
             --title "$RELEASE_TITLE" \
-            FarNetBox/*.7z
+            SshBox/*.7z
 
           echo "Release created successfully"
         env:

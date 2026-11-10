@@ -252,6 +252,7 @@ void TConfiguration::Default()
   FCacheDirectoryChangesMaxSize = 100;
   FShowFtpWelcomeMessage = false;
   FExternalIpAddress.Clear();
+  FSshPath.Clear();
   FLocalPortNumberMin = 0;
   FLocalPortNumberMax = 0;
   FTryFtpWhenSshFails = true;
@@ -425,6 +426,7 @@ UnicodeString TConfiguration::PropertyToKey(const UnicodeString & Property)
   BLOCK("Interface", CANCREATE, \
     KEY(String,   RandomSeedFile); \
     KEY(String,   PuttyRegistryStorageKey); \
+    KEY(String,   SshPath); \
     KEY(Bool,     ConfirmOverwriting); \
     KEY(Bool,     ConfirmResume); \
     KEY(Bool,     SilentMode); \
@@ -2157,6 +2159,11 @@ UnicodeString TConfiguration::GetRandomSeedFileName() const
 void TConfiguration::SetExternalIpAddress(const UnicodeString & Value)
 {
   SET_CONFIG_PROPERTY(ExternalIpAddress);
+}
+
+void TConfiguration::SetSshPath(const UnicodeString & Value)
+{
+  SET_CONFIG_PROPERTY(SshPath);
 }
 
 bool TConfiguration::HasLocalPortNumberLimits() const

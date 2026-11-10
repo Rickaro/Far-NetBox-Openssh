@@ -414,7 +414,7 @@ TCustomFarFileSystem * TWinSCPPlugin::OpenPluginEx(OPENFROM OpenFrom, intptr_t I
         Directory = Entry.RemoteDirectory;
         // Use local session name (without folder prefix) for ParseUrl compatibility
         SessionName = TSessionData::ExtractLocalName(SessionName);
-        CommandLine = FORMAT(L"netbox:%s", SessionName);
+        CommandLine = FORMAT(L"sshbox:%s", SessionName);
       }
       else
       {
@@ -428,7 +428,7 @@ TCustomFarFileSystem * TWinSCPPlugin::OpenPluginEx(OPENFROM OpenFrom, intptr_t I
     }
     const auto NormalizeSessionName = [](const UnicodeString & Cmd) -> UnicodeString {
       UnicodeString Result(Cmd);
-      if (Result.SubString(1, 7).LowerCase() == L"netbox:")
+      if (Result.SubString(1, 7).LowerCase() == L"sshbox:")
         Result.Delete(1, 7);
       return TSessionData::ExtractLocalName(Result);
     };

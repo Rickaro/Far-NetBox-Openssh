@@ -19,8 +19,8 @@
 #define PLUGIN_VERSION_TXT _NTOA3(_MAJOR,_MINOR,_PATCH)
 
 #define PLUGIN_AUTHOR       L"Mikhail Lukashov"
-#define PLUGIN_DESCR        L"SFTP/FTP(S)/SCP/WebDAV/S3 client for FAR 3.0 x86/x64/ARM64"
-#define PLUGIN_FILENAME     L"NetBox.dll"
+#define PLUGIN_DESCR        L"SshBox: SFTP/SCP client for FAR 3.0 using OpenSSH"
+#define PLUGIN_FILENAME     L"SshBox.dll"
 
 #define WINSCP_PLUGIN_VERSION_WTXT  L"1.6.2.151"
 #define PUTTY_VERSION_WTXT          L"0.84"

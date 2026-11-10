@@ -1041,7 +1041,7 @@ bool TWinSCPPlugin::IntegrationConfigurationDialog()
   std::unique_ptr<TWinSCPDialog> DialogPtr(std::make_unique<TWinSCPDialog>(this));
   TWinSCPDialog * Dialog = DialogPtr.get();
 
-  Dialog->SetSize(TPoint(65, 14));
+  Dialog->SetSize(TPoint(65, 16));
   Dialog->SetCaption(FORMAT("%s - %s",
     GetMsg(NB_PLUGIN_TITLE), ::StripHotkey(GetMsg(NB_CONFIG_INTEGRATION))));
   Dialog->SetDialogGuid(&IntegrationConfigurationDialogGuid);
@@ -1069,6 +1069,11 @@ bool TWinSCPPlugin::IntegrationConfigurationDialog()
 
   TFarEdit * PuttygenPathEdit = MakeOwnedObject<TFarEdit>(Dialog);
 
+  Text = MakeOwnedObject<TFarText>(Dialog);
+  Text->SetCaption(GetMsg(NB_INTEGRATION_SSH_PATH));
+
+  TFarEdit * SshPathEdit = MakeOwnedObject<TFarEdit>(Dialog);
+
   Dialog->AddStandardButtons();
 
   PuttyPathEdit->SetText(GetGUIConfiguration()->GetPuttyPath());
@@ -1076,6 +1081,7 @@ bool TWinSCPPlugin::IntegrationConfigurationDialog()
   TelnetForFtpInPuttyCheck->SetChecked(GetGUIConfiguration()->GetTelnetForFtpInPutty());
   PageantPathEdit->SetText(GetFarConfiguration()->GetPageantPath());
   PuttygenPathEdit->SetText(GetFarConfiguration()->GetPuttygenPath());
+  SshPathEdit->SetText(GetConfiguration()->GetSshPath());
 
   const bool Result = (Dialog->ShowModal() == brOK);
 
@@ -1089,6 +1095,7 @@ bool TWinSCPPlugin::IntegrationConfigurationDialog()
       GetGUIConfiguration()->SetTelnetForFtpInPutty(TelnetForFtpInPuttyCheck->GetChecked());
       GetFarConfiguration()->SetPageantPath(PageantPathEdit->GetText());
       GetFarConfiguration()->SetPuttygenPath(PuttygenPathEdit->GetText());
+      GetConfiguration()->SetSshPath(SshPathEdit->GetText());
     }
     __finally
     {
@@ -2632,7 +2639,7 @@ UnicodeString TGenerateUrlDialog::GenerateScript() const
     return UnicodeString();
   }
   const int32_t FormatIndex = FScriptFormatCombo->GetItemIndex();
-  UnicodeString ExeName = L"netbox";
+  UnicodeString ExeName = L"sshbox";
   UnicodeString ExePath = L"\"" + ExeName + L".com\"";
 
   // Build open command arguments
@@ -11157,9 +11164,7 @@ void TSynchronizeDialog::Idle(TObject * Sender, void * Data)
 
   if (GetFarPlugin() && !FClosing)
   {
-    FSynchroParams.SynchroEvent = nb::bind(&TSynchronizeDialog::OnIdle, this);
-    FSynchroParams.Sender = this;
-    GetFarPlugin()->PostMainThreadSynchro(&FSynchroParams);
+    PostSynchro(nb::bind(&TSynchronizeDialog::OnIdle, this));
   }
 }
 
@@ -11585,9 +11590,7 @@ void TQueueDialog::Idle(TObject * Sender, void * Data)
 
   if (GetFarPlugin() && !FClosing)
   {
-    FSynchroParams.SynchroEvent = nb::bind(&TQueueDialog::OnIdle, this);
-    FSynchroParams.Sender = this;
-    GetFarPlugin()->PostMainThreadSynchro(&FSynchroParams);
+    PostSynchro(nb::bind(&TQueueDialog::OnIdle, this));
   }
 }
 

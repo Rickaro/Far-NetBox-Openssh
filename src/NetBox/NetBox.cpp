@@ -108,8 +108,8 @@ void WINAPI GetGlobalInfoW(struct GlobalInfo * Info)
   Info->StructSize = sizeof(*Info);
   Info->MinFarVersion = MAKEFARVERSION(FARMANAGERVERSION_MAJOR, FARMANAGERVERSION_MINOR, FARMANAGERVERSION_REVISION, FARMANAGERVERSION_BUILD, FARMANAGERVERSION_STAGE);
   Info->Version = MAKEFARVERSION(NETBOX_VERSION_MAJOR, NETBOX_VERSION_MINOR, NETBOX_VERSION_PATCH, NETBOX_VERSION_BUILD, VS_RELEASE);
-  Info->Guid = NetBoxPluginGuid;
-  Info->Title = L"NetBox";
+  Info->Guid = SshBoxPluginGuid;
+  Info->Title = L"SshBox";
   Info->Description = PLUGIN_DESCR;
   Info->Author = PLUGIN_AUTHOR;
   Info->Instance = FarPlugin;
@@ -324,7 +324,7 @@ HANDLE WINAPI AnalyseW(const struct AnalyseInfo * Info)
   }
 
   const size_t fileNameLen = nb::StrLength(Info->FileName);
-  if (fileNameLen < 8 || _wcsicmp(Info->FileName + fileNameLen - 7, L".netbox") != 0)
+  if (fileNameLen < 8 || _wcsicmp(Info->FileName + fileNameLen - 7, L".sshbox") != 0)
   {
     return nullptr;
   }

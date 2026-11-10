@@ -330,12 +330,39 @@ intptr_t TCustomFarPlugin::ProcessSynchroEvent(const ProcessSynchroEventInfo * I
   Expects(Info);
   try
   {
-    const TSynchroParams * SynchroParams = static_cast<TSynchroParams *>(Info->Param);
+    TSynchroParams * SynchroParams = static_cast<TSynchroParams *>(Info->Param);
     if (SynchroParams)
     {
-      if (SynchroParams->Sender && SynchroParams->SynchroEvent)
+      TSynchroEvent Event;
+      TObject * Sender = nullptr;
+      bool Orphaned = false;
       {
-        SynchroParams->SynchroEvent(this, nullptr);
+        TGuard Guard(SynchroParams->Section);
+        Orphaned = SynchroParams->Orphaned;
+        if (!Orphaned)
+        {
+          Event = SynchroParams->SynchroEvent;
+          Sender = SynchroParams->Sender;
+        }
+      }
+
+      if (!Orphaned && (Sender != nullptr) && Event)
+      {
+        Event(this, nullptr);
+      }
+
+      bool Delete = false;
+      {
+        TGuard Guard(SynchroParams->Section);
+        if (SynchroParams->Pending > 0)
+        {
+          --SynchroParams->Pending;
+        }
+        Delete = SynchroParams->Orphaned && (SynchroParams->Pending == 0);
+      }
+      if (Delete)
+      {
+        delete SynchroParams;
       }
     }
     else
@@ -1179,9 +1206,7 @@ void TFarMessageDialog::Idle(TObject * Sender, void * Data)
   // Timer events and Close() still need ACTL_SYNCHRO to run on Far main thread
   if (GetFarPlugin() && !FClosing)
   {
-    FSynchroParams.SynchroEvent = nb::bind(&TFarMessageDialog::OnUpdateTimeoutButton, this);
-    FSynchroParams.Sender = this;
-    GetFarPlugin()->FarAdvControl(ACTL_SYNCHRO, 0, &FSynchroParams);
+    PostSynchro(nb::bind(&TFarMessageDialog::OnUpdateTimeoutButton, this));
   }
 }
 
@@ -1335,7 +1360,7 @@ int32_t TCustomFarPlugin::FarMessage(uint32_t Flags,
 
   const TFarEnvGuard Guard;
   const int32_t Result = nb::ToInt32(FStartupInfo.Message(
-    &NetBoxPluginGuid, &MessageGuid,
+    &SshBoxPluginGuid, &MessageGuid,
     Flags | FMSG_LEFTALIGN, nullptr, Items, nb::ToInt32(MessageLines->GetCount()),
     nb::ToInt32(Buttons->GetCount())));
 
@@ -1366,7 +1391,7 @@ int32_t TCustomFarPlugin::Message(uint32_t Flags,
     const UnicodeString Items = Title + L"\n" + Message;
     const TFarEnvGuard Guard;
     Result = nb::ToInt32(FStartupInfo.Message(
-      &NetBoxPluginGuid, &MessageGuid,
+      &SshBoxPluginGuid, &MessageGuid,
       Flags | FMSG_ALLINONE | FMSG_LEFTALIGN,
       nullptr,
       static_cast<const wchar_t * const *>(static_cast<const void *>(Items.c_str())), 0, 0));
@@ -1385,7 +1410,7 @@ intptr_t TCustomFarPlugin::Menu(FARMENUFLAGS Flags, const UnicodeString & Title,
   DebugAssert(Items);
 
   const TFarEnvGuard Guard;
-  return FStartupInfo.Menu(&NetBoxPluginGuid, &MenuGuid,
+  return FStartupInfo.Menu(&SshBoxPluginGuid, &MenuGuid,
       -1, -1, 0,
       Flags,
       Title.c_str(),
@@ -1469,7 +1494,7 @@ bool TCustomFarPlugin::InputBox(const UnicodeString & Title,
     {
       const TFarEnvGuard Guard;
       Result = FStartupInfo.InputBox(
-          &NetBoxPluginGuid,
+          &SshBoxPluginGuid,
           &InputBoxGuid,
           Title.c_str(),
           Prompt.c_str(),
@@ -1820,7 +1845,7 @@ UnicodeString TCustomFarPlugin::GetMsg(intptr_t MsgId) const
   if (FStartupInfo.GetMsg)
   try
   {
-    Result = FStartupInfo.GetMsg(&NetBoxPluginGuid, MsgId);
+    Result = FStartupInfo.GetMsg(&SshBoxPluginGuid, MsgId);
   }
   catch(...)
   {
@@ -2004,7 +2029,7 @@ intptr_t TCustomFarPlugin::FarAdvControl(ADVANCED_CONTROL_COMMANDS Command, intp
 {
   const TFarEnvGuard Guard;
   return FStartupInfo.AdvControl ?
-    FStartupInfo.AdvControl(&NetBoxPluginGuid, Command, Param1, Param2) : 0;
+    FStartupInfo.AdvControl(&SshBoxPluginGuid, Command, Param1, Param2) : 0;
 }
 
 intptr_t TCustomFarPlugin::FarEditorControl(EDITOR_CONTROL_COMMANDS Command, intptr_t Param1, void * Param2) const

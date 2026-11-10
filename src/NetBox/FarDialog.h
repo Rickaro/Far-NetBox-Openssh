@@ -136,8 +136,10 @@ protected:
   void SetBounds(const TRect & Value);
 
   void SetIdleInterval(DWORD Millisecs);
+  void PostIdle();
+  void PostSynchro(const TSynchroEvent & Event);
   bool FIdlePending{false};
-  TSynchroParams FSynchroParams{};
+  TSynchroParams * FSynchroParams{nullptr};
   bool FClosing{false};
 
 private:

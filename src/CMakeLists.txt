@@ -33,14 +33,14 @@ netbox_configure_source_groups()
 #===============================================================================
 
 add_custom_target(NetBoxResources SOURCES
-  NetBox/NetBoxEng.lng
-  NetBox/NetBoxFr.lng
-  NetBox/NetBoxRus.lng
-  NetBox/NetBoxPol.lng
-  NetBox/NetBoxSpa.lng
+  NetBox/SshBoxEng.lng
+  NetBox/SshBoxFr.lng
+  NetBox/SshBoxRus.lng
+  NetBox/SshBoxPol.lng
+  NetBox/SshBoxSpa.lng
   NetBox/resource.h.template
-  NetBox/NetBox.rc
-  NetBox/NetBox.rc.template
+  NetBox/SshBox.rc
+  NetBox/SshBox.rc.template
   resource/rtlconsts.rc
   resource/TextsCore1.rc
   resource/TextsFileZilla.rc
@@ -56,10 +56,12 @@ add_custom_target(NetBoxResources SOURCES
 #===============================================================================
 
 # Create the NetBox targe
-add_library(NetBox SHARED ${NETBOX_SOURCES})
+add_library(SshBox SHARED ${NETBOX_SOURCES})
+
+set_target_properties(SshBox PROPERTIES OUTPUT_NAME "SshBox")
 
 # Configure the target with includes, libraries, and compiler options
-netbox_configure_target(NetBox)
+netbox_configure_target(SshBox)
 
 # Custom build rule for vc_crt_fix.asm (MASM) on MSVC x64/x86
 if(MSVC AND NOT DEFINED CMAKE_ULINK)
@@ -82,7 +84,7 @@ if(MSVC AND NOT DEFINED CMAKE_ULINK)
       COMMENT "Assembling vc_crt_fix.asm with ${ASM_COMPILER}"
     )
     set_source_files_properties(${ASM_OBJ} PROPERTIES GENERATED TRUE)
-    target_sources(NetBox PRIVATE ${ASM_OBJ})
+    target_sources(SshBox PRIVATE ${ASM_OBJ})
   endif()
 endif()
 
@@ -90,31 +92,31 @@ endif()
 # Plugin Directory Installation (Optional)
 #===============================================================================
 
-netbox_setup_plugin_installation(NetBox)
+netbox_setup_plugin_installation(SshBox)
 
 #===============================================================================
 # NetBoxAskpass helper for the external OpenSSH backend
 #===============================================================================
 
-add_executable(NetBoxAskpass NetBoxAskpass/NetBoxAskpass.cpp)
-netbox_apply_compile_options(NetBoxAskpass)
-target_include_directories(NetBoxAskpass PRIVATE ${CMAKE_SOURCE_DIR}/src/include)
-target_link_libraries(NetBoxAskpass PRIVATE user32.lib gdi32.lib kernel32.lib)
-set_target_properties(NetBoxAskpass PROPERTIES
+add_executable(SshBoxAskpass NetBoxAskpass/NetBoxAskpass.cpp)
+netbox_apply_compile_options(SshBoxAskpass)
+target_include_directories(SshBoxAskpass PRIVATE ${CMAKE_SOURCE_DIR}/src/include)
+target_link_libraries(SshBoxAskpass PRIVATE user32.lib gdi32.lib kernel32.lib)
+set_target_properties(SshBoxAskpass PROPERTIES
   LINK_FLAGS "/SUBSYSTEM:CONSOLE /ENTRY:wmainCRTStartup"
-  OUTPUT_NAME "NetBoxAskpass"
+  OUTPUT_NAME "SshBoxAskpass"
 )
 
 if(OPT_CREATE_PLUGIN_DIR)
-  set(NB_PLUGIN_OUT_DIR "${CMAKE_SOURCE_DIR}/Far3_${PROJECT_PLATFORM}/Plugins/NetBox")
-  add_custom_command(TARGET NetBoxAskpass POST_BUILD
+  set(NB_PLUGIN_OUT_DIR "${CMAKE_SOURCE_DIR}/Far3_${PROJECT_PLATFORM}/Plugins/SshBox")
+  add_custom_command(TARGET SshBoxAskpass POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory "${NB_PLUGIN_OUT_DIR}"
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-      "$<TARGET_FILE:NetBoxAskpass>"
-      "${NB_PLUGIN_OUT_DIR}/NetBoxAskpass.exe"
-    COMMENT "Copying NetBoxAskpass.exe to plugin directory"
+      "$<TARGET_FILE:SshBoxAskpass>"
+      "${NB_PLUGIN_OUT_DIR}/SshBoxAskpass.exe"
+    COMMENT "Copying SshBoxAskpass.exe to plugin directory"
   )
-  add_dependencies(NetBox NetBoxAskpass)
+  add_dependencies(SshBox SshBoxAskpass)
 endif()
 
 #===============================================================================

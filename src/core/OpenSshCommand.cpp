@@ -11,6 +11,7 @@
 #include "OpenSshConfig.h"
 #include "OpenSshProcess.h"
 #include "SessionData.h"
+#include "CoreMain.h"
 
 #include <string>
 #include <cstring>
@@ -110,9 +111,17 @@ bool CanUseOpenSsh(const TSessionData * Data)
   }
 
   wchar_t Override[64]{};
-  const DWORD OverrideLength = ::GetEnvironmentVariableW(
-    L"NETBOX_SSH_CLIENT", Override, static_cast<DWORD>(_countof(Override)));
-  if (OverrideLength > 0 && OverrideLength < _countof(Override))
+  const wchar_t * const EnvironmentNames[] = { L"SSHBOX_SSH_CLIENT", L"NETBOX_SSH_CLIENT" };
+  DWORD OverrideLength = 0;
+  for (const wchar_t * Name : EnvironmentNames)
+  {
+    OverrideLength = ::GetEnvironmentVariableW(Name, Override, static_cast<DWORD>(_countof(Override)));
+    if (OverrideLength > 0)
+    {
+      break;
+    }
+  }
+  if ((OverrideLength > 0) && (OverrideLength < _countof(Override)))
   {
     if (::lstrcmpiW(Override, L"putty") == 0)
     {
@@ -121,7 +130,7 @@ bool CanUseOpenSsh(const TSessionData * Data)
     // Any other value (including "openssh") keeps the automatic selection.
   }
 
-  if (!Data->GetUsesSsh() || !TProcess::IsAvailable())
+  if (!Data->GetUsesSsh() || !TProcess::IsAvailable(GetConfiguration()->GetSshPath()))
   {
     return false;
   }
@@ -169,14 +178,22 @@ std::vector<UnicodeString> BuildSshArguments(const TSessionData * Data, bool Scp
   // plain byte stream, matching PuTTY's "nopty" mode.
   Arguments.push_back(L"-T");
 
-  const bool Askpass = !TProcess::FindAskpassExecutable().IsEmpty();
+  const bool Askpass = !TProcess::FindAskpassExecutable(GetConfiguration()->GetSshPath()).IsEmpty();
   AddOption(Arguments, L"BatchMode", Askpass ? L"no" : L"yes");
   // sftp/scp normally set this themselves; we invoke ssh directly, so make
   // sure port forwardings from ~/.ssh/config do not open extra listeners.
   AddOption(Arguments, L"ClearAllForwardings", L"yes");
   wchar_t VerboseValue[8]{};
-  const bool Verbose = (::GetEnvironmentVariableW(L"NETBOX_SSH_VERBOSE", VerboseValue,
-    static_cast<DWORD>(_countof(VerboseValue))) > 0);
+  const wchar_t * const VerboseNames[] = { L"SSHBOX_SSH_VERBOSE", L"NETBOX_SSH_VERBOSE" };
+  bool Verbose = false;
+  for (const wchar_t * Name : VerboseNames)
+  {
+    if (::GetEnvironmentVariableW(Name, VerboseValue, static_cast<DWORD>(_countof(VerboseValue))) > 0)
+    {
+      Verbose = true;
+      break;
+    }
+  }
   AddOption(Arguments, L"LogLevel", Verbose ? L"DEBUG1" : L"ERROR");
   if (Askpass)
   {

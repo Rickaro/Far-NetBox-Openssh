@@ -214,7 +214,11 @@ void ReadPipe(HANDLE Pipe, std::vector<char> & Buffer, bool & Eof)
 
 std::wstring GetPluginDirectory()
 {
-  const HMODULE Module = ::GetModuleHandleW(L"NetBox.dll");
+  HMODULE Module = ::GetModuleHandleW(L"SshBox.dll");
+  if (Module == nullptr)
+  {
+    Module = ::GetModuleHandleW(L"NetBox.dll");
+  }
   if (Module == nullptr)
   {
     return std::wstring();
@@ -244,11 +248,12 @@ TProcess::~TProcess() noexcept
 
 bool TProcess::Start(const std::vector<UnicodeString> & Arguments,
   const UnicodeString & Password, const UnicodeString & Passphrase,
-  const UnicodeString & AskpassPipe, uint64_t AskpassToken, UnicodeString & Error)
+  const UnicodeString & SshPath, const UnicodeString & AskpassPipe,
+  uint64_t AskpassToken, UnicodeString & Error)
 {
   Close();
 
-  const UnicodeString SshExecutable = FindSshExecutable();
+  const UnicodeString SshExecutable = FindSshExecutable(SshPath);
   if (SshExecutable.IsEmpty())
   {
     Error = L"OpenSSH client (ssh.exe) not found. Install OpenSSH Client or set NETBOX_SSH_EXE.";
@@ -263,13 +268,13 @@ bool TProcess::Start(const std::vector<UnicodeString> & Arguments,
   }
 
   std::vector<std::pair<std::wstring, std::wstring>> EnvironmentOverrides;
-  const UnicodeString Askpass = FindAskpassExecutable();
+  const UnicodeString Askpass = FindAskpassExecutable(SshPath);
   if (!Askpass.IsEmpty())
   {
     EnvironmentOverrides.emplace_back(L"SSH_ASKPASS", ToWide(Askpass));
     EnvironmentOverrides.emplace_back(L"SSH_ASKPASS_REQUIRE", L"force");
     // Older OpenSSH releases only use SSH_ASKPASS when DISPLAY is set.
-    EnvironmentOverrides.emplace_back(L"DISPLAY", L"NetBox");
+    EnvironmentOverrides.emplace_back(L"DISPLAY", L"SshBox");
   }
   else
   {
@@ -525,22 +530,44 @@ bool TProcess::GetExitCode(uint32_t & ExitCode)
   return true;
 }
 
-bool TProcess::IsAvailable()
+bool TProcess::IsAvailable(const UnicodeString & SshPath)
 {
-  return !FindSshExecutable().IsEmpty();
+  return !FindSshExecutable(SshPath).IsEmpty();
 }
 
-UnicodeString TProcess::FindSshExecutable()
+UnicodeString TProcess::FindSshExecutable(const UnicodeString & SshPath)
 {
   wchar_t Buffer[32768];
 
-  DWORD Length = ::GetEnvironmentVariableW(L"NETBOX_SSH_EXE", Buffer, static_cast<DWORD>(_countof(Buffer)));
-  if ((Length > 0) && (Length < _countof(Buffer)))
+  if (!SshPath.IsEmpty())
   {
-    const std::wstring Override(Buffer, Length);
-    if (FileExistsW(Override))
+    std::wstring Candidate = ToWide(SshPath);
+    if (FileExistsW(Candidate))
     {
-      return FromWide(Override);
+      return FromWide(Candidate);
+    }
+    const DWORD Attributes = ::GetFileAttributesW(Candidate.c_str());
+    if ((Attributes != INVALID_FILE_ATTRIBUTES) && ((Attributes & FILE_ATTRIBUTE_DIRECTORY) != 0))
+    {
+      Candidate += L"\\ssh.exe";
+      if (FileExistsW(Candidate))
+      {
+        return FromWide(Candidate);
+      }
+    }
+  }
+
+  const wchar_t * const EnvironmentNames[] = { L"SSHBOX_SSH_EXE", L"NETBOX_SSH_EXE" };
+  for (const wchar_t * Name : EnvironmentNames)
+  {
+    const DWORD Length = ::GetEnvironmentVariableW(Name, Buffer, static_cast<DWORD>(_countof(Buffer)));
+    if ((Length > 0) && (Length < _countof(Buffer)))
+    {
+      const std::wstring Override(Buffer, Length);
+      if (FileExistsW(Override))
+      {
+        return FromWide(Override);
+      }
     }
   }
 
@@ -554,7 +581,7 @@ UnicodeString TProcess::FindSshExecutable()
     }
   }
 
-  Length = ::SearchPathW(nullptr, L"ssh.exe", nullptr, static_cast<DWORD>(_countof(Buffer)), Buffer, nullptr);
+  const DWORD Length = ::SearchPathW(nullptr, L"ssh.exe", nullptr, static_cast<DWORD>(_countof(Buffer)), Buffer, nullptr);
   if ((Length > 0) && (Length < _countof(Buffer)))
   {
     const std::wstring Candidate(Buffer, Length);
@@ -567,27 +594,16 @@ UnicodeString TProcess::FindSshExecutable()
   return UnicodeString();
 }
 
-UnicodeString TProcess::FindAskpassExecutable()
+UnicodeString TProcess::FindAskpassExecutable(const UnicodeString & SshPath)
 {
-  std::wstring Directory = GetPluginDirectory();
+  const wchar_t * const Names[] = { L"SshBoxAskpass.exe", L"NetBoxAskpass.exe" };
+
+  const std::wstring Directory = GetPluginDirectory();
   if (!Directory.empty())
   {
-    const std::wstring Candidate = Directory + L"\\NetBoxAskpass.exe";
-    if (FileExistsW(Candidate))
+    for (const wchar_t * Name : Names)
     {
-      return FromWide(Candidate);
-    }
-  }
-
-  const UnicodeString SshExecutable = FindSshExecutable();
-  if (!SshExecutable.IsEmpty())
-  {
-    std::wstring SshDirectory = ToWide(SshExecutable);
-    const size_t Position = SshDirectory.find_last_of(L"\\/");
-    if (Position != std::wstring::npos)
-    {
-      SshDirectory.erase(Position);
-      const std::wstring Candidate = SshDirectory + L"\\NetBoxAskpass.exe";
+      const std::wstring Candidate = Directory + L"\\" + Name;
       if (FileExistsW(Candidate))
       {
         return FromWide(Candidate);
@@ -595,15 +611,37 @@ UnicodeString TProcess::FindAskpassExecutable()
     }
   }
 
-  wchar_t Buffer[32768];
-  const DWORD Length = ::SearchPathW(nullptr, L"NetBoxAskpass.exe", nullptr,
-    static_cast<DWORD>(_countof(Buffer)), Buffer, nullptr);
-  if ((Length > 0) && (Length < _countof(Buffer)))
+  const UnicodeString SshExecutable = FindSshExecutable(SshPath);
+  if (!SshExecutable.IsEmpty())
   {
-    const std::wstring Candidate(Buffer, Length);
-    if (FileExistsW(Candidate))
+    std::wstring SshDirectory = ToWide(SshExecutable);
+    const size_t Position = SshDirectory.find_last_of(L"\\/");
+    if (Position != std::wstring::npos)
     {
-      return FromWide(Candidate);
+      SshDirectory.erase(Position);
+      for (const wchar_t * Name : Names)
+      {
+        const std::wstring Candidate = SshDirectory + L"\\" + Name;
+        if (FileExistsW(Candidate))
+        {
+          return FromWide(Candidate);
+        }
+      }
+    }
+  }
+
+  wchar_t Buffer[32768];
+  for (const wchar_t * Name : Names)
+  {
+    const DWORD Length = ::SearchPathW(nullptr, Name, nullptr,
+      static_cast<DWORD>(_countof(Buffer)), Buffer, nullptr);
+    if ((Length > 0) && (Length < _countof(Buffer)))
+    {
+      const std::wstring Candidate(Buffer, Length);
+      if (FileExistsW(Candidate))
+      {
+        return FromWide(Candidate);
+      }
     }
   }
 

@@ -37,7 +37,7 @@ function(netbox_configure_plugin_directory)
 set(PROJECT_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/..)
 # get_filename_component(PROJECT_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../ PATH)
 string(REPLACE "\\" "/" PROJECT_ROOT ${PROJECT_ROOT})
-set(NETBOX_PLUGIN_DIR ${PROJECT_ROOT}/Far3_${PROJECT_PLATFORM}/Plugins/NetBox PARENT_SCOPE)
+set(NETBOX_PLUGIN_DIR ${PROJECT_ROOT}/Far3_${PROJECT_PLATFORM}/Plugins/SshBox PARENT_SCOPE)
 endfunction()
 
 function(netbox_define_distribution_files)
@@ -53,9 +53,9 @@ endfunction()
 function(netbox_define_target_files)
 
 set(NB_TARGET_FILES
-  NetBox.dll
-  NetBox.pdb
-  NetBox.map
+  SshBox.dll
+  SshBox.pdb
+  SshBox.map
   PARENT_SCOPE
 )
 endfunction()
@@ -93,7 +93,7 @@ foreach(DIST_FILE ${DIST_FILES})
 endforeach()
 
 # Create a custom target for .lng files to ensure they are copied when changed,
-# not only when NetBox.dll is generated
+# not only when SshBox.dll is generated
 file(GLOB LNG_FILES "${CMAKE_SOURCE_DIR}/src/NetBox/*.lng")
 if(LNG_FILES)
 add_custom_target(copy_lng_files ALL COMMENT "")

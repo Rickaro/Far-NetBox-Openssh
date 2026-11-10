@@ -1,10 +1,10 @@
 .Language=Russian,Russian (Русский)
 
-"NetBox"
-"NetBox"
+"SshBox"
+"SshBox"
 
 "Название соединения"
-"NetBox: Избранное"
+"SshBox: Избранное"
 
 "Соединение прервано."
 "Инициализация..."
@@ -568,7 +568,7 @@
 "Двоичные все"
 "Без сохранения времени"
 
-"NetBox commands"
+"SshBox commands"
 "Display session log &file"
 "View/change file a&ttributes  Ctrl-A"
 "Create/edit &link             Alt-F6"
@@ -762,7 +762,7 @@
 
 "Imported %d sessions"
 
-"NetBox (FTP/SCP/WebDAV Client)"
+"SshBox (FTP/SCP/WebDAV Client)"
 
 "OK"
 "Отмена"
@@ -788,7 +788,7 @@
 "Имя сессии содержит запрещенные символы (<>:\"/\\|?*)"
 
 //Configure menu
-"NetBox - настройки"
+"SshBox - настройки"
 "Основные настройки"
 "Настройки прокси"
 "Настройки логирования"
@@ -804,7 +804,7 @@
 "Каталог сохранённых сессий:"
 
 //Proxy configure dialog
-"NetBox - Настройки прокси"
+"SshBox - Настройки прокси"
 "Тип прокси:"
 "Нет"
 "SOCKS4"
@@ -817,7 +817,7 @@
 "Пароль:"
 
 //Logging configure dialog
-"NetBox - Настройки логирования"
+"SshBox - Настройки логирования"
 "Разрешить логирование"
 " Настройки логирования "
 "Уровень логирования:"
@@ -825,10 +825,10 @@
 "Debug 2"
 "Debug 3"
 "Писать лог в файл:"
-"C:\NetBox.log"
+"C:\SshBox.log"
 
 //About menu
-"NetBox - О плагине"
+"SshBox - О плагине"
 "SFTP/FTP/SCP/WebDAV/S3 клиент для Far 3.0"
 "Версия %s"
 "Закрыть"
@@ -1465,3 +1465,4 @@
 "Введите имя удалённого &файла:"
 "You are at the root remote directory. Disconnect from the server?"
 "Эта сессия получена из конфигурации OpenSSH и доступна только для чтения. Измените ~/.ssh/config."
+"Клиент OpenSSH (&ssh.exe):"

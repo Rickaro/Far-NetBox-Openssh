@@ -5,7 +5,7 @@
 #include "FarUtils.h"
 
 constexpr const char * CONST_XML_VERSION21 = "2.1";
-constexpr const char * CONST_ROOT_NODE = "NetBox";
+constexpr const char * CONST_ROOT_NODE = "SshBox";
 constexpr const char * CONST_SESSION_NODE = "Session";
 constexpr const char * CONST_VERSION_ATTR = "version";
 constexpr const char * CONST_NAME_ATTR = "name";

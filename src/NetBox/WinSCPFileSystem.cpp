@@ -470,8 +470,8 @@ void TWinSCPFileSystem::GetOpenPanelInfoEx(OPENPANELINFO_FLAGS & Flags,
     {
       HostFile.Clear();
       CurDir = FLastPath;
-      AFormat = L"netbox";
-      PanelTitle = L" netbox ";
+      AFormat = L"sshbox";
+      PanelTitle = L" sshbox ";
       ShortcutData.Clear();
       TINYLOG_WARNING(g_tinylog) << TLogContext::Format()
           << "GetOpenPanelInfoEx: FTerminal is null, returning safe defaults";
@@ -494,7 +494,7 @@ void TWinSCPFileSystem::GetOpenPanelInfoEx(OPENPANELINFO_FLAGS & Flags,
       CurDir = base::ToUnixPath(FTerminal->GetCurrentDirectory());
       const UnicodeString FolderName = GetSessionData()->GetFolderName();
       const UnicodeString SessionName = GetSessionData()->GetLocalName();
-      AFormat = FORMAT("netbox:%s", SessionName);
+      AFormat = FORMAT("sshbox:%s", SessionName);
       const UnicodeString HostName = GetSessionData()->GetHostNameExpanded();
       // const UnicodeString Url = GetSessionData()->GenerateSessionUrl(sufComplete);
       if (GetFarConfiguration()->GetSessionNameInTitle())
@@ -528,7 +528,7 @@ void TWinSCPFileSystem::GetOpenPanelInfoEx(OPENPANELINFO_FLAGS & Flags,
   else
   {
     CurDir = ROOTDIRECTORY + FSessionsFolder;
-    AFormat = "netbox";
+    AFormat = "sshbox";
     Flags = !OPIF_DISABLESORTGROUPS | !OPIF_DISABLEHIGHLIGHTING | OPIF_USEATTRHIGHLIGHTING |
       OPIF_ADDDOTS | OPIF_SHOWPRESERVECASE | OPIF_SHORTCUT;
 
@@ -2776,7 +2776,7 @@ void TWinSCPFileSystem::UpdatePanelDirectoryParam()
       fpd.StructSize = sizeof(fpd);
       fpd.Name = FTerminal->GetCurrentDirectory().c_str();
       fpd.Param = Param.c_str();
-      fpd.PluginId = NetBoxPluginGuid;
+      fpd.PluginId = SshBoxPluginGuid;
       FTerminal->LogEvent(FORMAT(L"UpdatePanelDirectoryParam: Param=%s", Param));
       FarControl(FCTL_SETPANELDIRECTORY, 0, &fpd, PANEL_ACTIVE);
     }
@@ -3429,7 +3429,7 @@ void TWinSCPFileSystem::ExportSession(TSessionData * Data, void * AParam)
   ExportData->Assign(Data);
   ExportData->SetModified(true);
   const UnicodeString XmlFileName = ::IncludeTrailingBackslash(Param.DestPath) +
-    ::ValidLocalFileName(ExportData->GetName()) + ".netbox";
+    ::ValidLocalFileName(ExportData->GetName()) + ".sshbox";
 
   // Check if file already exists
   if (FileExists(XmlFileName))

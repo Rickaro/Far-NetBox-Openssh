@@ -140,6 +140,7 @@ private:
   UnicodeString FDefaultRandomSeedFile;
   UnicodeString FRandomSeedFile;
   UnicodeString FPuttyRegistryStorageKey;
+  UnicodeString FSshPath;
   UnicodeString FExternalIpAddress;
   int32_t FLocalPortNumberMin{0};
   int32_t FLocalPortNumberMax{0};
@@ -183,6 +184,8 @@ public:
   void SetRandomSeedFile(const UnicodeString & Value);
   UnicodeString GetRandomSeedFileName() const;
   void SetPuttyRegistryStorageKey(const UnicodeString & Value);
+  void SetSshPath(const UnicodeString & Value);
+  UnicodeString GetSshPath() const { return FSshPath; }
   UnicodeString GetSshHostKeysSubKey() const;
   UnicodeString GetRootKeyStr() const;
   UnicodeString GetConfigurationSubKey() const;
@@ -396,6 +399,8 @@ public:
   const ROProperty<UnicodeString> StoredSessionsSubKey{nb::bind(&TConfiguration::GetStoredSessionsSubKey, this)};
   __property UnicodeString PuttyRegistryStorageKey  = { read=FPuttyRegistryStorageKey, write=SetPuttyRegistryStorageKey };
   RWProperty<UnicodeString> PuttyRegistryStorageKey{nb::bind(&TConfiguration::GetPuttyRegistryStorageKey, this), nb::bind(&TConfiguration::SetPuttyRegistryStorageKey, this)};
+  __property UnicodeString SshPath  = { read=FSshPath, write=SetSshPath };
+  RWProperty<UnicodeString> SshPath{nb::bind(&TConfiguration::GetSshPath, this), nb::bind(&TConfiguration::SetSshPath, this)};
   __property UnicodeString PuttySessionsKey  = { read=DoGetPuttySessionsKey };
   const ROProperty<UnicodeString> PuttySessionsKey{nb::bind(&TConfiguration::DoGetPuttySessionsKey, this)};
   __property UnicodeString PuttySessionsSubKey  = { read=GetPuttySessionsSubKey };

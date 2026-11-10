@@ -1,12 +1,13 @@
-# Far-NetBox
+# SshBox
 
-> SFTP/FTP/SCP/WebDAV/S3 client plugin for Far Manager 3.0 (x86/x64/ARM64)
+> SFTP/SCP client plugin for Far Manager 3.0 using the system OpenSSH client
 
-Far-NetBox is a file transfer plugin for [Far Manager](https://www.farmanager.com/) supporting multiple network protocols. Built on proven codebases — WinSCP 6.5.6, PuTTY 0.81, and FileZilla 2.2.32 — it delivers reliable remote file management inside Far's text-mode interface.
+SshBox is a fork of Far-NetBox focused on native OpenSSH. It reads
+`~/.ssh/config` (including `Include`, `Match` and `ProxyJump`), uses OpenSSH
+keys and ssh-agent, and can be installed next to the original NetBox plugin.
 
-| Workflow | Build status |
-|----------|-------------|
-| GitHub Actions | [![build](https://github.com/michaellukashov/Far-NetBox/actions/workflows/release.yml/badge.svg)](https://github.com/michaellukashov/Far-NetBox/actions/workflows/release.yml) |
+The plugin is built as `SshBox.dll` and installed into `Plugins\SshBox`, so it
+does not replace or conflict with `Plugins\NetBox`.
 
 ## Quick Start
 
@@ -17,31 +18,94 @@ cmd /c build-x64.bat
 :: Launch Far Manager from the platform directory
 Far3_x64\Far.exe
 
-:: Press F11 and select NetBox to open the plugin
+:: Press F11 and select SshBox
 ```
 
 ## Key Features
 
-- **Native OpenSSH** — SFTP/SCP through the Windows OpenSSH client, with
-  `~/.ssh/config`, `Include`, `ProxyJump`, key authentication and ssh-agent
-- **SFTP/SCP** — SSH file transfers via PuTTY (fallback backend)
-- **FTP/FTPS** — File Transfer Protocol with TLS via FileZilla
-- **WebDAV/HTTPS** — Web-based distributed authoring via neon
-- **Amazon S3** — S3-compatible storage with TLS and custom CA certificates
-- **Session management** — XML-based configuration with password encryption
+- **Native OpenSSH** — SFTP/SCP through `ssh.exe`, with `~/.ssh/config`,
+  `Include`, `ProxyJump`, key authentication and ssh-agent
+- **Hosts from config** — `~/.ssh/config` hosts appear in the session panel;
+  `Include` files are shown as folders
+- **Far dialogs** — password, key passphrase and host-key prompts are shown by
+  Far itself through a per-session named-pipe bridge
+- **Fallback** — PuTTY remains available for `.ppk` keys, SOCKS/HTTP proxies
+  and interactive terminal sessions
 - **Multi-architecture** — x86, x64, and ARM64 builds
+
+## OpenSSH settings
+
+### Integration settings (recommended)
+
+Open the plugin commands menu with **`Alt+Shift+W`**, then choose
+**Integration settings**. The dialog contains:
+
+- **OpenSSH client (`ssh.exe`)** — full path to the `ssh.exe` to use. Leave it
+  empty to use the automatic search.
+- Putty/Pageant/PuTTYgen paths — used only by the PuTTY fallback.
+
+The path is stored in the SshBox configuration and takes precedence over
+environment variables. It must point to `ssh.exe` (not `scp.exe`); a directory
+containing `ssh.exe` is also accepted.
+
+### Environment variables
+
+Variables are read from the environment of the **running Far process**. Set
+them before starting Far; `setx` only affects new processes, so Far must be
+restarted.
+
+| Variable | Meaning |
+|----------|---------|
+| `SSHBOX_SSH_EXE` | Path to `ssh.exe`; legacy `NETBOX_SSH_EXE` is also accepted |
+| `SSHBOX_SSH_CLIENT` | `putty` forces the PuTTY backend; any other value keeps automatic selection; legacy `NETBOX_SSH_CLIENT` is also accepted |
+| `SSHBOX_SSH_VERBOSE` | Adds `-o LogLevel=DEBUG1` to ssh for diagnostics; legacy `NETBOX_SSH_VERBOSE` is also accepted |
+
+Precedence for the SSH client:
+
+1. **Integration settings → OpenSSH client**
+2. `SSHBOX_SSH_EXE` / `NETBOX_SSH_EXE`
+3. `%WINDIR%\System32\OpenSSH\ssh.exe`
+4. `ssh.exe` from `PATH`
+
+Example for the current session only:
+
+```cmd
+set SSHBOX_SSH_EXE=C:\Users\me\AppData\Local\Programs\Git\usr\bin\ssh.exe
+set SSHBOX_SSH_VERBOSE=1
+"C:\Far3_x64\Far.exe"
+```
+
+The plugin writes the resolved client path to the session log:
+
+```text
+OpenSSH executable: C:\...\ssh.exe
+Starting OpenSSH client: ...
+```
+
+### Logging
+
+Logging is disabled by default. Open **`Alt+Shift+W` → Logging settings**,
+enable **Enable logging** and **Log to file**. The default file is:
+
+```text
+%TEMP%\<session name>.log
+```
+
+The dialog shows the actual expanded path. For key-authentication problems,
+enable `SSHBOX_SSH_VERBOSE=1` and look for `identity file`, `Will attempt key`,
+`Trying private key` and `Authenticated ... using "publickey"`.
 
 ## Documentation
 
 | Guide | Description |
 |-------|-------------|
 | [Getting Started](docs/getting-started.md) | Build, install, and first connection |
-| [User Guide](docs/user-guide.md) | Protocols, features, and internationalization |
 | [Native OpenSSH](docs/openssh.md) | OpenSSH backend, `~/.ssh/config` hosts and limitations |
 | [Architecture](docs/architecture.md) | Project structure, layers, and patterns |
-| [Contributing](docs/contributing.md) | Code conventions, build rules, and development workflow |
+| [Contributing](docs/contributing.md) | Code conventions and development workflow |
 | [Testing](docs/testing.md) | Manual regression testing and verification |
 
 ## License
 
-Far-NetBox is free software licensed under the [GNU General Public License v3](LICENSE.txt).
+SshBox is free software licensed under the
+[GNU General Public License v3](LICENSE.txt).

@@ -1468,4 +1468,5 @@ enum MsgIDs {
     NB_CONFIRM_DISCONNECT_FROM_ROOT,  // "You are at the root remote directory. Disconnect from the server?"
 
     NB_OPENSSH_CONFIG_SESSION_READONLY,  // "This session comes from the OpenSSH configuration file. Edit ~/.ssh/config instead."
+    NB_INTEGRATION_SSH_PATH,  // "OpenSSH client (&ssh.exe):"
 };

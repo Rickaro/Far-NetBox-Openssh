@@ -1,8 +1,8 @@
 .Language=English,English
-.PluginContents=NetBox
+.PluginContents=SshBox
 
 @contents
-$# NetBox
+$# SshBox
 
     ~Plugin menu~@menu@
     ~Settings menu~@settingsmenu@
@@ -58,20 +58,20 @@ $# Settings Menu
 $# Configuration Options
 
   #Disks Menu#
-     Add NetBox to the Disks menu (available from Alt-Shift-0).
+     Add SshBox to the Disks menu (available from Alt-Shift-0).
 
   #Plugins Menu#
-     Add main NetBox entry to the Plugins menu.
+     Add main SshBox entry to the Plugins menu.
 
   #Plugins Menu Commands#
-     Add NetBox Commands submenu to the Plugins menu.
+     Add SshBox Commands submenu to the Plugins menu.
 
   #Session Name in Title#
      Show session name in the plugin title.
 
   #Command Prefixes#
-     Command line prefixes that can be used to open NetBox
-     (default: netbox,ftp,scp,sftp,ftps,webdav,s3).
+     Command line prefixes that can be used to open SshBox
+     (default: sshbox,ftp,scp,sftp,ftps,webdav,s3).
 
   #Custom Panel Mode#
      Define detailed panel mode configuration (column types, widths, etc.).
@@ -117,14 +117,14 @@ $# Session/Connection Dialog
 @cmdline
 $# Command Line Support
 
-  NetBox can be invoked from FAR command line using any of the configured
-  command prefixes (default: netbox,ftp,scp,sftp,ftps,webdav,s3).
+  SshBox can be invoked from FAR command line using any of the configured
+  command prefixes (default: sshbox,ftp,scp,sftp,ftps,webdav,s3).
 
   Syntax:
     <prefix>:[//[user[:password]@]host[:port]/][path]
 
   Examples:
-    netbox:example.com/public/
+    sshbox:example.com/public/
     sftp:user@ssh.example.com:2222/projects
     ftps:ftp.example.com
     webdav:https://webdav.example.com/dav
@@ -137,8 +137,8 @@ $# Command Line Support
 @commands
 $# Commands Menu
 
-  Access via Plugins → NetBox Commands or Ctrl-Alt-Shift-W when
-  NetBox panel is active.
+  Access via Plugins → SshBox Commands or Ctrl-Alt-Shift-W when
+  SshBox panel is active.
 
   #Attributes#
      Change file attributes on remote server (permissions, timestamps).
@@ -205,7 +205,7 @@ $# Commands Menu
 @fileops
 $# File Operations
 
-  NetBox supports standard file operations:
+  SshBox supports standard file operations:
 
   #Copy/Move#
      Copy or move files between local and remote panels, or within remote panel.
@@ -288,7 +288,7 @@ $# Transfer Queue
 @editor
 $# Editor Integration
 
-  NetBox can integrate with FAR editor for remote file editing:
+  SshBox can integrate with FAR editor for remote file editing:
 
   #Download on open#
      When opening a remote file, it is automatically downloaded to temporary location.
@@ -488,7 +488,7 @@ $# Plugin GUIDs
 @macro
 $# Macro Functions
 
-  NetBox can be controlled from FAR macros using Plugin.Call.
+  SshBox can be controlled from FAR macros using Plugin.Call.
 
   General format:
     Plugin.Call("{GUID}", <Function>, <Parameters>...)
@@ -534,13 +534,13 @@ $# Macro Functions
     "Editor", "Progress" - Get current parsing progress.
 
 @author
-$# About NetBox
+$# About SshBox
 
-  NetBox is a plugin for FAR Manager providing access to remote
+  SshBox is a plugin for FAR Manager providing access to remote
   file systems via various protocols.
 
   #Home page:#
-     https://github.com/NetBox-WinSCP/NetBox
+     https://github.com/SshBox-WinSCP/SshBox
 
   #Based on:#
      WinSCP (https://winscp.net/)
@@ -551,7 +551,7 @@ $# About NetBox
      libs3 (https://github.com/bji/libs3)
 
   #License:#
-     GPL v3 or later (NetBox, WinSCP)
+     GPL v3 or later (SshBox, WinSCP)
      LGPL v2.1+ (FileZilla)
      MIT (some components)
 
